@@ -2275,10 +2275,10 @@ resource "aws_wafv2_web_acl" "default" {
 
         # Copied AND Statement rendering with changed matcher to or_statement 
         dynamic "or_statement" {
-          for_each = rule.value.or_statement != null ? [rule.value.or_statement] : []
+          for_each = rule.value.or_statement != null ? [1] : []
           content {
             dynamic "statement" {
-              for_each = try(or_statement.value.statements, [])
+              for_each = rule.value.or_statement.statements != null ? rule.value.or_statement.statements : []
               content {
                 dynamic "label_match_statement" {
                   for_each = statement.value.label_match_statement != null ? [statement.value.label_match_statement] : []

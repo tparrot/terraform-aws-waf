@@ -416,8 +416,8 @@ variable "managed_rule_group_statement_rules" {
           }))
         }), null)
         label_match_statement = optional(object({
-          key = string
-          scope         = string
+          key   = string
+          scope = string
         }), null)
       }), null)
       version = optional(string)
@@ -650,8 +650,8 @@ variable "rate_based_statement_rules" {
           }))
         }), null)
         label_match_statement = optional(object({
-          key = string
-          scope         = string
+          key   = string
+          scope = string
         }), null)
       }), null)
     })
@@ -1157,9 +1157,10 @@ variable "xss_match_statement_rules" {
 
 variable "nested_statement_rules" {
   type = list(object({
-    name     = string
-    priority = number
-    action   = string
+    name       = string
+    priority   = number
+    action     = string
+    rule_label = optional(list(string), null)
     custom_response = optional(object({
       response_code            = string
       custom_response_body_key = optional(string, null)
@@ -1212,7 +1213,8 @@ variable "nested_statement_rules" {
         Additional creation of a conditional group with NOT statement
         See https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/wafv2_web_acl#not-statement
 
-
+    rule_label:
+       A List of labels to apply to web requests that match the rule match statement
 
     visibility_config:
       Defines and enables Amazon CloudWatch metrics and web request sample collection.

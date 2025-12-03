@@ -95,15 +95,16 @@ locals {
       name              = rule.name
       priority          = rule.priority
       action            = rule.action
+      rule_label        = rule.rule_label
       visibility_config = rule.visibility_config
 
       and_statement = try(rule.statement.and_statement, null) != null ? {
         statements = [
           for stmt in try(rule.statement.and_statement.statements, []) : {
-            label_match_statement    = stmt.type == "label_match_statement" ? try(jsondecode(stmt.statement), null) : null
+            label_match_statement     = stmt.type == "label_match_statement" ? try(jsondecode(stmt.statement), null) : null
             not_label_match_statement = stmt.type == "not_label_match_statement" ? try(jsondecode(stmt.statement), null) : null
-            byte_match_statement     = stmt.type == "byte_match_statement" ? try(jsondecode(stmt.statement), null) : null
-            not_byte_match_statement = stmt.type == "not_byte_match_statement" ? try(jsondecode(stmt.statement), null) : null
+            byte_match_statement      = stmt.type == "byte_match_statement" ? try(jsondecode(stmt.statement), null) : null
+            not_byte_match_statement  = stmt.type == "not_byte_match_statement" ? try(jsondecode(stmt.statement), null) : null
           }
         ]
       } : null
@@ -111,10 +112,10 @@ locals {
       or_statement = try(rule.statement.or_statement, null) != null ? {
         statements = [
           for stmt in try(rule.statement.or_statement.statements, []) : {
-            label_match_statement    = stmt.type == "label_match_statement" ? try(jsondecode(stmt.statement), null) : null
+            label_match_statement     = stmt.type == "label_match_statement" ? try(jsondecode(stmt.statement), null) : null
             not_label_match_statement = stmt.type == "not_label_match_statement" ? try(jsondecode(stmt.statement), null) : null
-            byte_match_statement     = stmt.type == "byte_match_statement" ? try(jsondecode(stmt.statement), null) : null
-            not_byte_match_statement = stmt.type == "not_byte_match_statement" ? try(jsondecode(stmt.statement), null) : null
+            byte_match_statement      = stmt.type == "byte_match_statement" ? try(jsondecode(stmt.statement), null) : null
+            not_byte_match_statement  = stmt.type == "not_byte_match_statement" ? try(jsondecode(stmt.statement), null) : null
           }
         ]
       } : null
@@ -2354,7 +2355,7 @@ resource "aws_wafv2_web_acl" "default" {
                     }
                   }
                 }
-                dynamic "not_statement" {             
+                dynamic "not_statement" {
                   for_each = statement.value.not_byte_match_statement != null || statement.value.not_label_match_statement != null ? [1] : []
                   content {
                     statement {

@@ -398,7 +398,7 @@ variable "managed_rule_group_statement_rules" {
       vendor_name                      = string
       scope_down_not_statement_enabled = optional(bool, false)
       scope_down_statement = optional(object({
-        byte_match_statement = object({
+        byte_match_statement = optional(object({
           positional_constraint = string
           search_string         = string
           field_to_match = object({
@@ -414,7 +414,11 @@ variable "managed_rule_group_statement_rules" {
             priority = number
             type     = string
           }))
-        })
+        }), null)
+        label_match_statement = optional(object({
+          key = string
+          scope         = string
+        }), null)
       }), null)
       version = optional(string)
       rule_action_override = optional(map(object({
@@ -628,7 +632,7 @@ variable "rate_based_statement_rules" {
         }), null)
       })), null)
       scope_down_statement = optional(object({
-        byte_match_statement = object({
+        byte_match_statement = optional(object({
           positional_constraint = string
           search_string         = string
           field_to_match = object({
@@ -644,7 +648,11 @@ variable "rate_based_statement_rules" {
             priority = number
             type     = string
           }))
-        })
+        }), null)
+        label_match_statement = optional(object({
+          key = string
+          scope         = string
+        }), null)
       }), null)
     })
     visibility_config = optional(object({
@@ -1161,12 +1169,18 @@ variable "nested_statement_rules" {
       }), null)
     }), null)
     statement = object({
-      and_statement = object({
+      and_statement = optional(object({
         statements = list(object({
           type      = string
           statement = string
         }))
-      })
+      }), null)
+      or_statement = optional(object({
+        statements = list(object({
+          type      = string
+          statement = string
+        }))
+      }), null)
     })
     visibility_config = optional(object({
       cloudwatch_metrics_enabled = optional(bool)

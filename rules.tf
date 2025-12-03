@@ -101,6 +101,7 @@ locals {
         statements = [
           for stmt in try(rule.statement.and_statement.statements, []) : {
             label_match_statement    = stmt.type == "label_match_statement" ? try(jsondecode(stmt.statement), null) : null
+            not_label_match_statement = stmt.type == "not_label_match_statement" ? try(jsondecode(stmt.statement), null) : null
             byte_match_statement     = stmt.type == "byte_match_statement" ? try(jsondecode(stmt.statement), null) : null
             not_byte_match_statement = stmt.type == "not_byte_match_statement" ? try(jsondecode(stmt.statement), null) : null
           }
@@ -111,6 +112,7 @@ locals {
         statements = [
           for stmt in try(rule.statement.or_statement.statements, []) : {
             label_match_statement    = stmt.type == "label_match_statement" ? try(jsondecode(stmt.statement), null) : null
+            not_label_match_statement = stmt.type == "not_label_match_statement" ? try(jsondecode(stmt.statement), null) : null
             byte_match_statement     = stmt.type == "byte_match_statement" ? try(jsondecode(stmt.statement), null) : null
             not_byte_match_statement = stmt.type == "not_byte_match_statement" ? try(jsondecode(stmt.statement), null) : null
           }
@@ -2353,19 +2355,7 @@ resource "aws_wafv2_web_acl" "default" {
                   }
                 }
                 dynamic "not_statement" {             
-                  for_each = statement.value.not_label_match_statement != null ? [1] : []
-                  content {
-                    statement {
-                      dynamic "label_match_statement" {
-                        for_each = statement.value.not_label_match_statement != null ? [statement.value.not_label_match_statement] : []
-                        content {
-                          scope = label_match_statement.value.scope
-                          key   = label_match_statement.value.key
-                        }
-                      }
-                    }
-                  }
-                  for_each = statement.value.not_byte_match_statement != null ? [1] : []
+                  for_each = statement.value.not_byte_match_statement != null || statement.value.not_label_match_statement != null ? [1] : []
                   content {
                     statement {
                       dynamic "label_match_statement" {

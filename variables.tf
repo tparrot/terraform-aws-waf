@@ -419,6 +419,71 @@ variable "managed_rule_group_statement_rules" {
           key   = string
           scope = string
         }), null)
+        regex_pattern_set_reference_statement = optional(object({
+          arn = string
+          field_to_match = object({
+            all_query_arguments   = optional(bool)
+            body                  = optional(bool)
+            method                = optional(bool)
+            query_string          = optional(bool)
+            single_header         = optional(object({ name = string }))
+            single_query_argument = optional(object({ name = string }))
+            uri_path              = optional(bool)
+          })
+          text_transformation = list(object({
+            priority = number
+            type     = string
+          }))
+        }), null)
+        not_byte_match_statement = optional(object({
+          positional_constraint = string
+          search_string         = string
+          field_to_match = object({
+            all_query_arguments   = optional(bool)
+            body                  = optional(bool)
+            method                = optional(bool)
+            query_string          = optional(bool)
+            single_header         = optional(object({ name = string }))
+            single_query_argument = optional(object({ name = string }))
+            uri_path              = optional(bool)
+          })
+          text_transformation = list(object({
+            priority = number
+            type     = string
+          }))
+        }), null)
+        not_label_match_statement = optional(object({
+          key   = string
+          scope = string
+        }), null)
+        not_regex_pattern_set_reference_statement = optional(object({
+          arn = string
+          field_to_match = object({
+            all_query_arguments   = optional(bool)
+            body                  = optional(bool)
+            method                = optional(bool)
+            query_string          = optional(bool)
+            single_header         = optional(object({ name = string }))
+            single_query_argument = optional(object({ name = string }))
+            uri_path              = optional(bool)
+          })
+          text_transformation = list(object({
+            priority = number
+            type     = string
+          }))
+        }), null)
+        and_statement = optional(object({
+          statements = list(object({
+            type      = string
+            statement = string
+          }))
+        }), null)
+        or_statement = optional(object({
+          statements = list(object({
+            type      = string
+            statement = string
+          }))
+        }), null)
       }), null)
       version = optional(string)
       rule_action_override = optional(map(object({
@@ -652,6 +717,71 @@ variable "rate_based_statement_rules" {
         label_match_statement = optional(object({
           key   = string
           scope = string
+        }), null)
+        regex_pattern_set_reference_statement = optional(object({
+          arn = string
+          field_to_match = object({
+            all_query_arguments   = optional(bool)
+            body                  = optional(bool)
+            method                = optional(bool)
+            query_string          = optional(bool)
+            single_header         = optional(object({ name = string }))
+            single_query_argument = optional(object({ name = string }))
+            uri_path              = optional(bool)
+          })
+          text_transformation = list(object({
+            priority = number
+            type     = string
+          }))
+        }), null)
+        not_byte_match_statement = optional(object({
+          positional_constraint = string
+          search_string         = string
+          field_to_match = object({
+            all_query_arguments   = optional(bool)
+            body                  = optional(bool)
+            method                = optional(bool)
+            query_string          = optional(bool)
+            single_header         = optional(object({ name = string }))
+            single_query_argument = optional(object({ name = string }))
+            uri_path              = optional(bool)
+          })
+          text_transformation = list(object({
+            priority = number
+            type     = string
+          }))
+        }), null)
+        not_label_match_statement = optional(object({
+          key   = string
+          scope = string
+        }), null)
+        not_regex_pattern_set_reference_statement = optional(object({
+          arn = string
+          field_to_match = object({
+            all_query_arguments   = optional(bool)
+            body                  = optional(bool)
+            method                = optional(bool)
+            query_string          = optional(bool)
+            single_header         = optional(object({ name = string }))
+            single_query_argument = optional(object({ name = string }))
+            uri_path              = optional(bool)
+          })
+          text_transformation = list(object({
+            priority = number
+            type     = string
+          }))
+        }), null)
+        and_statement = optional(object({
+          statements = list(object({
+            type      = string
+            statement = string
+          }))
+        }), null)
+        or_statement = optional(object({
+          statements = list(object({
+            type      = string
+            statement = string
+          }))
         }), null)
       }), null)
     })

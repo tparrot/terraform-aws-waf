@@ -875,7 +875,7 @@ resource "aws_wafv2_web_acl" "default" {
                 dynamic "regex_pattern_set_reference_statement" {
                   for_each = scope_down_statement.value.regex_pattern_set_reference_statement != null ? [scope_down_statement.value.regex_pattern_set_reference_statement] : []
                   content {
-                    arn = try(aws_wafv2_regex_pattern_set.default[local.regex_rule_to_regex_pattern_set[rule.key]], null) != null ? aws_wafv2_regex_pattern_set.default[local.regex_rule_to_regex_pattern_set[rule.key]].arn : regex_pattern_set_reference_statement.value.arn
+                    arn = regex_pattern_set_reference_statement.value.arn
 
                     dynamic "field_to_match" {
                       for_each = regex_pattern_set_reference_statement.value.field_to_match != null ? [regex_pattern_set_reference_statement.value.field_to_match] : []
@@ -2932,7 +2932,8 @@ resource "aws_wafv2_web_acl" "default" {
           for_each = lookup(rule.value, "statement", null) != null ? [rule.value.statement] : []
 
           content {
-            arn = stmt.value.arn
+            arn = try(aws_wafv2_regex_pattern_set.default[local.regex_rule_to_regex_pattern_set[rule.key]], null) != null ? aws_wafv2_regex_pattern_set.default[local.regex_rule_to_regex_pattern_set[rule.key]].arn : stmt.value.arn
+
 
             dynamic "field_to_match" {
               for_each = lookup(rule.value.statement, "field_to_match", null) != null ? [rule.value.statement.field_to_match] : []

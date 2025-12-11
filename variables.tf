@@ -242,7 +242,13 @@ variable "geo_match_statement_rules" {
         value = string
       }), null)
     }), null)
-    statement = any
+    statement = object({
+      country_codes = list(string)
+      forwarded_ip_config = optional(object({
+        fallback_behavior = string
+        header_name       = string
+      }), null)
+    })
     visibility_config = optional(object({
       cloudwatch_metrics_enabled = optional(bool)
       metric_name                = string
@@ -394,9 +400,8 @@ variable "managed_rule_group_statement_rules" {
     }), null)
     rule_label = optional(list(string), null)
     statement = object({
-      name                             = string
-      vendor_name                      = string
-      scope_down_not_statement_enabled = optional(bool, false)
+      name        = string
+      vendor_name = string
       scope_down_statement = optional(object({
         byte_match_statement = optional(object({
           positional_constraint = string
@@ -915,6 +920,12 @@ variable "regex_pattern_set_reference_statement_rules" {
     statement:
       arn:
          The Amazon Resource Name (ARN) of the Regex Pattern Set that this statement references.
+      regex_pattern_set:
+        Defines a new Regex Pattern Set if ARN is not given
+        description:
+          A friendly description of the Regex Pattern Set
+        regexes:
+          Contains an array of strings that resemble regex patterns
       field_to_match:
         The part of a web request that you want AWS WAF to inspect.
         See https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/wafv2_web_acl#field-to-match
@@ -945,7 +956,110 @@ variable "regex_match_statement_rules" {
       })
     }), null)
     rule_label = optional(list(string), null)
-    statement  = any
+    statement = object({
+      regex_string = string
+      field_to_match = object({
+        all_query_arguments   = optional(bool)
+        body                  = optional(bool)
+        method                = optional(bool)
+        query_string          = optional(bool)
+        single_header         = optional(object({ name = string }))
+        single_query_argument = optional(object({ name = string }))
+        uri_path              = optional(bool)
+      })
+      text_transformation = list(object({
+        priority = number
+        type     = string
+      }))
+      scope_down_statement = optional(object({
+        byte_match_statement = optional(object({
+          positional_constraint = string
+          search_string         = string
+          field_to_match = object({
+            all_query_arguments   = optional(bool)
+            body                  = optional(bool)
+            method                = optional(bool)
+            query_string          = optional(bool)
+            single_header         = optional(object({ name = string }))
+            single_query_argument = optional(object({ name = string }))
+            uri_path              = optional(bool)
+          })
+          text_transformation = list(object({
+            priority = number
+            type     = string
+          }))
+        }), null)
+        label_match_statement = optional(object({
+          key   = string
+          scope = string
+        }), null)
+        regex_pattern_set_reference_statement = optional(object({
+          arn = string
+          field_to_match = object({
+            all_query_arguments   = optional(bool)
+            body                  = optional(bool)
+            method                = optional(bool)
+            query_string          = optional(bool)
+            single_header         = optional(object({ name = string }))
+            single_query_argument = optional(object({ name = string }))
+            uri_path              = optional(bool)
+          })
+          text_transformation = list(object({
+            priority = number
+            type     = string
+          }))
+        }), null)
+        not_byte_match_statement = optional(object({
+          positional_constraint = string
+          search_string         = string
+          field_to_match = object({
+            all_query_arguments   = optional(bool)
+            body                  = optional(bool)
+            method                = optional(bool)
+            query_string          = optional(bool)
+            single_header         = optional(object({ name = string }))
+            single_query_argument = optional(object({ name = string }))
+            uri_path              = optional(bool)
+          })
+          text_transformation = list(object({
+            priority = number
+            type     = string
+          }))
+        }), null)
+        not_label_match_statement = optional(object({
+          key   = string
+          scope = string
+        }), null)
+        not_regex_pattern_set_reference_statement = optional(object({
+          arn = string
+          field_to_match = object({
+            all_query_arguments   = optional(bool)
+            body                  = optional(bool)
+            method                = optional(bool)
+            query_string          = optional(bool)
+            single_header         = optional(object({ name = string }))
+            single_query_argument = optional(object({ name = string }))
+            uri_path              = optional(bool)
+          })
+          text_transformation = list(object({
+            priority = number
+            type     = string
+          }))
+        }), null)
+        and_statement = optional(object({
+          statements = list(object({
+            type      = string
+            statement = string
+          }))
+        }), null)
+        or_statement = optional(object({
+          statements = list(object({
+            type      = string
+            statement = string
+          }))
+        }), null)
+      }), null)
+    })
     visibility_config = optional(object({
       cloudwatch_metrics_enabled = optional(bool)
       metric_name                = string
@@ -1100,7 +1214,23 @@ variable "size_constraint_statement_rules" {
         value = string
       }), null)
     }), null)
-    statement = any
+    statement = object({
+      comparison_operator = string
+      size                = number
+      field_to_match = object({
+        all_query_arguments   = optional(bool)
+        body                  = optional(object({ oversize_handling = string }))
+        method                = optional(bool)
+        query_string          = optional(bool)
+        single_header         = optional(object({ name = string }))
+        single_query_argument = optional(object({ name = string }))
+        uri_path              = optional(bool)
+      })
+      text_transformation = list(object({
+        priority = number
+        type     = string
+      }))
+    })
     visibility_config = optional(object({
       cloudwatch_metrics_enabled = optional(bool)
       metric_name                = string
@@ -1142,6 +1272,10 @@ variable "size_constraint_statement_rules" {
       field_to_match:
         The part of a web request that you want AWS WAF to inspect.
         See https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/wafv2_web_acl#field-to-match
+        body:
+          oversize_handling:
+            value is not a bool, but one of CONTINUE, MATCH, NO_MATCH, (default: continue)
+            WAF only receives the first 8192 bytes of a request, even if the body is larger
       text_transformation:
         Text transformations eliminate some of the unusual formatting that attackers use in web requests in an effort to bypass detection.
         See https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/wafv2_web_acl#text-transformation
@@ -1169,7 +1303,109 @@ variable "sqli_match_statement_rules" {
       })
     }), null)
     rule_label = optional(list(string), null)
-    statement  = any
+    statement = object({
+      field_to_match = object({
+        all_query_arguments   = optional(bool)
+        body                  = optional(bool)
+        method                = optional(bool)
+        query_string          = optional(bool)
+        single_header         = optional(object({ name = string }))
+        single_query_argument = optional(object({ name = string }))
+        uri_path              = optional(bool)
+      })
+      text_transformation = list(object({
+        priority = number
+        type     = string
+      }))
+      scope_down_statement = optional(object({
+        byte_match_statement = optional(object({
+          positional_constraint = string
+          search_string         = string
+          field_to_match = object({
+            all_query_arguments   = optional(bool)
+            body                  = optional(bool)
+            method                = optional(bool)
+            query_string          = optional(bool)
+            single_header         = optional(object({ name = string }))
+            single_query_argument = optional(object({ name = string }))
+            uri_path              = optional(bool)
+          })
+          text_transformation = list(object({
+            priority = number
+            type     = string
+          }))
+        }), null)
+        label_match_statement = optional(object({
+          key   = string
+          scope = string
+        }), null)
+        regex_pattern_set_reference_statement = optional(object({
+          arn = string
+          field_to_match = object({
+            all_query_arguments   = optional(bool)
+            body                  = optional(bool)
+            method                = optional(bool)
+            query_string          = optional(bool)
+            single_header         = optional(object({ name = string }))
+            single_query_argument = optional(object({ name = string }))
+            uri_path              = optional(bool)
+          })
+          text_transformation = list(object({
+            priority = number
+            type     = string
+          }))
+        }), null)
+        not_byte_match_statement = optional(object({
+          positional_constraint = string
+          search_string         = string
+          field_to_match = object({
+            all_query_arguments   = optional(bool)
+            body                  = optional(bool)
+            method                = optional(bool)
+            query_string          = optional(bool)
+            single_header         = optional(object({ name = string }))
+            single_query_argument = optional(object({ name = string }))
+            uri_path              = optional(bool)
+          })
+          text_transformation = list(object({
+            priority = number
+            type     = string
+          }))
+        }), null)
+        not_label_match_statement = optional(object({
+          key   = string
+          scope = string
+        }), null)
+        not_regex_pattern_set_reference_statement = optional(object({
+          arn = string
+          field_to_match = object({
+            all_query_arguments   = optional(bool)
+            body                  = optional(bool)
+            method                = optional(bool)
+            query_string          = optional(bool)
+            single_header         = optional(object({ name = string }))
+            single_query_argument = optional(object({ name = string }))
+            uri_path              = optional(bool)
+          })
+          text_transformation = list(object({
+            priority = number
+            type     = string
+          }))
+        }), null)
+        and_statement = optional(object({
+          statements = list(object({
+            type      = string
+            statement = string
+          }))
+        }), null)
+        or_statement = optional(object({
+          statements = list(object({
+            type      = string
+            statement = string
+          }))
+        }), null)
+      }), null)
+    })
     visibility_config = optional(object({
       cloudwatch_metrics_enabled = optional(bool)
       metric_name                = string
@@ -1233,7 +1469,21 @@ variable "xss_match_statement_rules" {
       })
     }), null)
     rule_label = optional(list(string), null)
-    statement  = any
+    statement = object({
+      field_to_match = object({
+        all_query_arguments   = optional(bool)
+        body                  = optional(bool)
+        method                = optional(bool)
+        query_string          = optional(bool)
+        single_header         = optional(object({ name = string }))
+        single_query_argument = optional(object({ name = string }))
+        uri_path              = optional(bool)
+      })
+      text_transformation = list(object({
+        priority = number
+        type     = string
+      }))
+    })
     visibility_config = optional(object({
       cloudwatch_metrics_enabled = optional(bool)
       metric_name                = string

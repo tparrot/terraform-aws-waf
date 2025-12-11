@@ -350,13 +350,14 @@ resource "aws_wafv2_web_acl" "default" {
         not_statement {
           statement {
             dynamic "geo_match_statement" {
+              iterator = stmt
               for_each = lookup(rule.value, "statement", null) != null ? [rule.value.statement] : []
 
               content {
-                country_codes = geo_match_statement.value.country_codes
+                country_codes = stmt.value.country_codes
 
                 dynamic "forwarded_ip_config" {
-                  for_each = lookup(geo_match_statement.value, "forwarded_ip_config", null) != null ? [geo_match_statement.value.forwarded_ip_config] : []
+                  for_each = lookup(stmt.value, "forwarded_ip_config", null) != null ? [stmt.value.forwarded_ip_config] : []
 
                   content {
                     fallback_behavior = forwarded_ip_config.value.fallback_behavior
@@ -434,13 +435,14 @@ resource "aws_wafv2_web_acl" "default" {
 
       statement {
         dynamic "geo_match_statement" {
+          iterator = stmt
           for_each = lookup(rule.value, "statement", null) != null ? [rule.value.statement] : []
 
           content {
-            country_codes = geo_match_statement.value.country_codes
+            country_codes = stmt.value.country_codes
 
             dynamic "forwarded_ip_config" {
-              for_each = lookup(geo_match_statement.value, "forwarded_ip_config", null) != null ? [geo_match_statement.value.forwarded_ip_config] : []
+              for_each = lookup(stmt.value, "forwarded_ip_config", null) != null ? [stmt.value.forwarded_ip_config] : []
 
               content {
                 fallback_behavior = forwarded_ip_config.value.fallback_behavior
@@ -470,6 +472,7 @@ resource "aws_wafv2_web_acl" "default" {
           }
         }
       }
+
 
       dynamic "rule_label" {
         for_each = lookup(rule.value, "rule_label", null) != null ? rule.value.rule_label : []
@@ -590,15 +593,16 @@ resource "aws_wafv2_web_acl" "default" {
 
       statement {
         dynamic "managed_rule_group_statement" {
+          iterator = stmt
           for_each = lookup(rule.value, "statement", null) != null ? [rule.value.statement] : []
 
           content {
-            name        = managed_rule_group_statement.value.name
-            vendor_name = managed_rule_group_statement.value.vendor_name
-            version     = lookup(managed_rule_group_statement.value, "version", null)
+            name        = stmt.value.name
+            vendor_name = stmt.value.vendor_name
+            version     = lookup(stmt.value, "version", null)
 
             dynamic "rule_action_override" {
-              for_each = lookup(managed_rule_group_statement.value, "rule_action_override", null) != null ? managed_rule_group_statement.value.rule_action_override : {}
+              for_each = lookup(stmt.value, "rule_action_override", null) != null ? stmt.value.rule_action_override : {}
 
               content {
                 name = rule_action_override.key
@@ -691,7 +695,7 @@ resource "aws_wafv2_web_acl" "default" {
 
             # https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/wafv2_web_acl#managed_rule_group_configs-block
             dynamic "managed_rule_group_configs" {
-              for_each = lookup(managed_rule_group_statement.value, "managed_rule_group_configs", null) != null ? managed_rule_group_statement.value.managed_rule_group_configs : []
+              for_each = lookup(stmt.value, "managed_rule_group_configs", null) != null ? stmt.value.managed_rule_group_configs : []
               content {
                 dynamic "aws_managed_rules_anti_ddos_rule_set" {
                   for_each = lookup(managed_rule_group_configs.value, "aws_managed_rules_anti_ddos_rule_set", null) != null ? [1] : []
@@ -866,12 +870,12 @@ resource "aws_wafv2_web_acl" "default" {
 
 
             dynamic "scope_down_statement" {
-              for_each = lookup(managed_rule_group_statement.value, "scope_down_statement", null) != null ? [managed_rule_group_statement.value.scope_down_statement] : []
+              for_each = lookup(stmt.value, "scope_down_statement", null) != null ? [stmt.value.scope_down_statement] : []
               content {
                 dynamic "regex_pattern_set_reference_statement" {
                   for_each = scope_down_statement.value.regex_pattern_set_reference_statement != null ? [scope_down_statement.value.regex_pattern_set_reference_statement] : []
                   content {
-                    arn = regex_pattern_set_reference_statement.value.arn
+                    arn = try(aws_wafv2_regex_pattern_set.default[local.regex_rule_to_regex_pattern_set[rule.key]], null) != null ? aws_wafv2_regex_pattern_set.default[local.regex_rule_to_regex_pattern_set[rule.key]].arn : regex_pattern_set_reference_statement.value.arn
 
                     dynamic "field_to_match" {
                       for_each = regex_pattern_set_reference_statement.value.field_to_match != null ? [regex_pattern_set_reference_statement.value.field_to_match] : []
@@ -1880,15 +1884,16 @@ resource "aws_wafv2_web_acl" "default" {
 
       statement {
         dynamic "rate_based_statement" {
+          iterator = stmt
           for_each = lookup(rule.value, "statement", null) != null ? [rule.value.statement] : []
 
           content {
-            aggregate_key_type    = lookup(rate_based_statement.value, "aggregate_key_type", "IP")
-            limit                 = rate_based_statement.value.limit
-            evaluation_window_sec = lookup(rate_based_statement.value, "evaluation_window_sec", 300)
+            aggregate_key_type    = lookup(stmt.value, "aggregate_key_type", "IP")
+            limit                 = stmt.value.limit
+            evaluation_window_sec = lookup(stmt.value, "evaluation_window_sec", 300)
 
             dynamic "forwarded_ip_config" {
-              for_each = lookup(rate_based_statement.value, "forwarded_ip_config", null) != null ? [rate_based_statement.value.forwarded_ip_config] : []
+              for_each = lookup(stmt.value, "forwarded_ip_config", null) != null ? [stmt.value.forwarded_ip_config] : []
 
               content {
                 fallback_behavior = forwarded_ip_config.value.fallback_behavior
@@ -1897,7 +1902,7 @@ resource "aws_wafv2_web_acl" "default" {
             }
 
             dynamic "custom_key" {
-              for_each = lookup(rate_based_statement.value, "custom_key", null) != null ? rate_based_statement.value.custom_key : []
+              for_each = lookup(stmt.value, "custom_key", null) != null ? stmt.value.custom_key : []
 
               content {
                 dynamic "ip" {
@@ -1928,7 +1933,7 @@ resource "aws_wafv2_web_acl" "default" {
               }
             }
             dynamic "scope_down_statement" {
-              for_each = lookup(rate_based_statement.value, "scope_down_statement", null) != null ? [rate_based_statement.value.scope_down_statement] : []
+              for_each = lookup(stmt.value, "scope_down_statement", null) != null ? [stmt.value.scope_down_statement] : []
               content {
                 dynamic "regex_pattern_set_reference_statement" {
                   for_each = scope_down_statement.value.regex_pattern_set_reference_statement != null ? [scope_down_statement.value.regex_pattern_set_reference_statement] : []
@@ -2923,10 +2928,11 @@ resource "aws_wafv2_web_acl" "default" {
 
       statement {
         dynamic "regex_pattern_set_reference_statement" {
+          iterator = stmt
           for_each = lookup(rule.value, "statement", null) != null ? [rule.value.statement] : []
 
           content {
-            arn = regex_pattern_set_reference_statement.value.arn
+            arn = stmt.value.arn
 
             dynamic "field_to_match" {
               for_each = lookup(rule.value.statement, "field_to_match", null) != null ? [rule.value.statement.field_to_match] : []
@@ -3049,6 +3055,7 @@ resource "aws_wafv2_web_acl" "default" {
 
       statement {
         dynamic "regex_match_statement" {
+          iterator = stmt
           for_each = lookup(rule.value, "statement", null) != null ? [rule.value.statement] : []
 
           content {
@@ -3116,6 +3123,945 @@ resource "aws_wafv2_web_acl" "default" {
               content {
                 priority = text_transformation.value.priority
                 type     = text_transformation.value.type
+              }
+            }
+            dynamic "scope_down_statement" {
+              for_each = lookup(stmt.value, "scope_down_statement", null) != null ? [stmt.value.scope_down_statement] : []
+              content {
+                dynamic "regex_pattern_set_reference_statement" {
+                  for_each = scope_down_statement.value.regex_pattern_set_reference_statement != null ? [scope_down_statement.value.regex_pattern_set_reference_statement] : []
+                  content {
+                    arn = regex_pattern_set_reference_statement.value.arn
+
+                    dynamic "field_to_match" {
+                      for_each = regex_pattern_set_reference_statement.value.field_to_match != null ? [regex_pattern_set_reference_statement.value.field_to_match] : []
+                      content {
+                        dynamic "all_query_arguments" {
+                          for_each = lookup(field_to_match.value, "all_query_arguments", null) != null ? [1] : []
+
+                          content {}
+                        }
+
+                        dynamic "body" {
+                          for_each = lookup(field_to_match.value, "body", null) != null ? [1] : []
+
+                          content {}
+                        }
+
+                        dynamic "method" {
+                          for_each = lookup(field_to_match.value, "method", null) != null ? [1] : []
+
+                          content {}
+                        }
+
+                        dynamic "query_string" {
+                          for_each = lookup(field_to_match.value, "query_string", null) != null ? [1] : []
+
+                          content {}
+                        }
+
+                        dynamic "single_header" {
+                          for_each = lookup(field_to_match.value, "single_header", null) != null ? [field_to_match.value.single_header] : []
+
+                          content {
+                            name = single_header.value.name
+                          }
+                        }
+
+                        dynamic "single_query_argument" {
+                          for_each = lookup(field_to_match.value, "single_query_argument", null) != null ? [field_to_match.value.single_query_argument] : []
+
+                          content {
+                            name = single_query_argument.value.name
+                          }
+                        }
+
+                        dynamic "uri_path" {
+                          for_each = lookup(field_to_match.value, "uri_path", null) != null ? [1] : []
+
+                          content {}
+                        }
+                      }
+                    }
+
+                    dynamic "text_transformation" {
+                      for_each = regex_pattern_set_reference_statement.value.text_transformation != null ? regex_pattern_set_reference_statement.value.text_transformation : []
+
+                      content {
+                        priority = text_transformation.value.priority
+                        type     = text_transformation.value.type
+                      }
+                    }
+                  }
+                }
+                dynamic "label_match_statement" {
+                  for_each = scope_down_statement.value.label_match_statement != null ? [scope_down_statement.value.label_match_statement] : []
+                  content {
+                    scope = label_match_statement.value.scope
+                    key   = label_match_statement.value.key
+                  }
+                }
+                dynamic "byte_match_statement" {
+                  for_each = scope_down_statement.value.byte_match_statement != null ? [scope_down_statement.value.byte_match_statement] : []
+                  content {
+                    positional_constraint = byte_match_statement.value.positional_constraint
+                    search_string         = byte_match_statement.value.search_string
+
+                    dynamic "field_to_match" {
+                      for_each = byte_match_statement.value.field_to_match != null ? [byte_match_statement.value.field_to_match] : []
+
+                      content {
+                        dynamic "all_query_arguments" {
+                          for_each = lookup(field_to_match.value, "all_query_arguments", null) != null ? [1] : []
+
+                          content {}
+                        }
+
+                        dynamic "body" {
+                          for_each = lookup(field_to_match.value, "body", null) != null ? [1] : []
+
+                          content {}
+                        }
+
+                        dynamic "method" {
+                          for_each = lookup(field_to_match.value, "method", null) != null ? [1] : []
+
+                          content {}
+                        }
+
+                        dynamic "query_string" {
+                          for_each = lookup(field_to_match.value, "query_string", null) != null ? [1] : []
+
+                          content {}
+                        }
+
+                        dynamic "single_header" {
+                          for_each = lookup(field_to_match.value, "single_header", null) != null ? [field_to_match.value.single_header] : []
+
+                          content {
+                            name = single_header.value.name
+                          }
+                        }
+
+                        dynamic "single_query_argument" {
+                          for_each = lookup(field_to_match.value, "single_query_argument", null) != null ? [field_to_match.value.single_query_argument] : []
+
+                          content {
+                            name = single_query_argument.value.name
+                          }
+                        }
+
+                        dynamic "uri_path" {
+                          for_each = lookup(field_to_match.value, "uri_path", null) != null ? [1] : []
+
+                          content {}
+                        }
+                      }
+                    }
+
+                    dynamic "text_transformation" {
+                      for_each = byte_match_statement.value.text_transformation != null ? byte_match_statement.value.text_transformation : []
+
+                      content {
+                        priority = text_transformation.value.priority
+                        type     = text_transformation.value.type
+                      }
+                    }
+                  }
+                }
+                dynamic "not_statement" {
+                  for_each = scope_down_statement.value.not_byte_match_statement != null || scope_down_statement.value.not_label_match_statement != null || scope_down_statement.value.not_regex_pattern_set_reference_statement != null ? [1] : []
+                  content {
+                    dynamic "statement" {
+                      for_each = scope_down_statement.value.not_byte_match_statement != null ? [1] : []
+                      content {
+                        dynamic "byte_match_statement" {
+                          for_each = statement.value.not_byte_match_statement != null ? [statement.value.not_byte_match_statement] : []
+                          content {
+                            positional_constraint = byte_match_statement.value.positional_constraint
+                            search_string         = byte_match_statement.value.search_string
+
+                            dynamic "field_to_match" {
+                              for_each = byte_match_statement.value.field_to_match != null ? [byte_match_statement.value.field_to_match] : []
+                              content {
+                                dynamic "all_query_arguments" {
+                                  for_each = lookup(field_to_match.value, "all_query_arguments", null) != null ? [1] : []
+
+                                  content {}
+                                }
+
+                                dynamic "body" {
+                                  for_each = lookup(field_to_match.value, "body", null) != null ? [1] : []
+
+                                  content {}
+                                }
+
+                                dynamic "method" {
+                                  for_each = lookup(field_to_match.value, "method", null) != null ? [1] : []
+
+                                  content {}
+                                }
+
+                                dynamic "query_string" {
+                                  for_each = lookup(field_to_match.value, "query_string", null) != null ? [1] : []
+
+                                  content {}
+                                }
+
+                                dynamic "single_header" {
+                                  for_each = lookup(field_to_match.value, "single_header", null) != null ? [field_to_match.value.single_header] : []
+
+                                  content {
+                                    name = single_header.value.name
+                                  }
+                                }
+
+                                dynamic "single_query_argument" {
+                                  for_each = lookup(field_to_match.value, "single_query_argument", null) != null ? [field_to_match.value.single_query_argument] : []
+
+                                  content {
+                                    name = single_query_argument.value.name
+                                  }
+                                }
+
+                                dynamic "uri_path" {
+                                  for_each = lookup(field_to_match.value, "uri_path", null) != null ? [1] : []
+
+                                  content {}
+                                }
+                              }
+                            }
+
+                            dynamic "text_transformation" {
+                              for_each = byte_match_statement.value.text_transformation != null ? byte_match_statement.value.text_transformation : []
+
+                              content {
+                                priority = text_transformation.value.priority
+                                type     = text_transformation.value.type
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                    dynamic "statement" {
+                      for_each = scope_down_statement.value.not_label_match_statement != null ? [1] : []
+                      content {
+                        dynamic "label_match_statement" {
+                          for_each = statement.value.not_label_match_statement != null ? [statement.value.not_label_match_statement] : []
+                          content {
+                            scope = label_match_statement.value.scope
+                            key   = label_match_statement.value.key
+                          }
+                        }
+                      }
+                    }
+                    dynamic "statement" {
+                      for_each = scope_down_statement.value.not_regex_pattern_set_reference_statement != null ? [1] : []
+                      content {
+                        dynamic "regex_pattern_set_reference_statement" {
+                          for_each = statement.value.not_regex_pattern_set_reference_statement != null ? [statement.value.not_regex_pattern_set_reference_statement] : []
+                          content {
+                            arn = regex_pattern_set_reference_statement.value.arn
+
+                            dynamic "field_to_match" {
+                              for_each = regex_pattern_set_reference_statement.value.field_to_match != null ? [regex_pattern_set_reference_statement.value.field_to_match] : []
+                              content {
+                                dynamic "all_query_arguments" {
+                                  for_each = lookup(field_to_match.value, "all_query_arguments", null) != null ? [1] : []
+
+                                  content {}
+                                }
+
+                                dynamic "body" {
+                                  for_each = lookup(field_to_match.value, "body", null) != null ? [1] : []
+
+                                  content {}
+                                }
+
+                                dynamic "method" {
+                                  for_each = lookup(field_to_match.value, "method", null) != null ? [1] : []
+
+                                  content {}
+                                }
+
+                                dynamic "query_string" {
+                                  for_each = lookup(field_to_match.value, "query_string", null) != null ? [1] : []
+
+                                  content {}
+                                }
+
+                                dynamic "single_header" {
+                                  for_each = lookup(field_to_match.value, "single_header", null) != null ? [field_to_match.value.single_header] : []
+
+                                  content {
+                                    name = single_header.value.name
+                                  }
+                                }
+
+                                dynamic "single_query_argument" {
+                                  for_each = lookup(field_to_match.value, "single_query_argument", null) != null ? [field_to_match.value.single_query_argument] : []
+
+                                  content {
+                                    name = single_query_argument.value.name
+                                  }
+                                }
+
+                                dynamic "uri_path" {
+                                  for_each = lookup(field_to_match.value, "uri_path", null) != null ? [1] : []
+
+                                  content {}
+                                }
+                              }
+                            }
+
+                            dynamic "text_transformation" {
+                              for_each = regex_pattern_set_reference_statement.value.text_transformation != null ? regex_pattern_set_reference_statement.value.text_transformation : []
+
+                              content {
+                                priority = text_transformation.value.priority
+                                type     = text_transformation.value.type
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+                // Working Rendering from encoded json
+                dynamic "and_statement" {
+                  for_each = lookup(scope_down_statement.value, "and_statement", null) != null ? [scope_down_statement.value.and_statement] : []
+                  content {
+                    dynamic "statement" {
+                      iterator = nested_statement
+                      for_each = and_statement.value.statements
+                      content {
+                        dynamic "byte_match_statement" {
+                          for_each = nested_statement.value.type == "byte_match_statement" ? [jsondecode(nested_statement.value.statement)] : []
+                          content {
+                            positional_constraint = byte_match_statement.value.positional_constraint
+                            search_string         = byte_match_statement.value.search_string
+
+                            dynamic "field_to_match" {
+                              for_each = byte_match_statement.value.field_to_match != null ? [byte_match_statement.value.field_to_match] : []
+
+                              content {
+                                dynamic "all_query_arguments" {
+                                  for_each = lookup(field_to_match.value, "all_query_arguments", null) != null ? [1] : []
+
+                                  content {}
+                                }
+
+                                dynamic "body" {
+                                  for_each = lookup(field_to_match.value, "body", null) != null ? [1] : []
+
+                                  content {}
+                                }
+
+                                dynamic "method" {
+                                  for_each = lookup(field_to_match.value, "method", null) != null ? [1] : []
+
+                                  content {}
+                                }
+
+                                dynamic "query_string" {
+                                  for_each = lookup(field_to_match.value, "query_string", null) != null ? [1] : []
+
+                                  content {}
+                                }
+
+                                dynamic "single_header" {
+                                  for_each = lookup(field_to_match.value, "single_header", null) != null ? [field_to_match.value.single_header] : []
+
+                                  content {
+                                    name = single_header.value.name
+                                  }
+                                }
+
+                                dynamic "single_query_argument" {
+                                  for_each = lookup(field_to_match.value, "single_query_argument", null) != null ? [field_to_match.value.single_query_argument] : []
+
+                                  content {
+                                    name = single_query_argument.value.name
+                                  }
+                                }
+
+                                dynamic "uri_path" {
+                                  for_each = lookup(field_to_match.value, "uri_path", null) != null ? [1] : []
+
+                                  content {}
+                                }
+                              }
+                            }
+
+                            dynamic "text_transformation" {
+                              for_each = byte_match_statement.value.text_transformation != null ? byte_match_statement.value.text_transformation : []
+
+                              content {
+                                priority = text_transformation.value.priority
+                                type     = text_transformation.value.type
+                              }
+                            }
+                          }
+                        }
+                        dynamic "regex_pattern_set_reference_statement" {
+                          for_each = nested_statement.value.type == "regex_pattern_set_reference_statement" ? [jsondecode(nested_statement.value.statement)] : []
+                          content {
+                            arn = regex_pattern_set_reference_statement.value.arn
+
+                            dynamic "field_to_match" {
+                              for_each = regex_pattern_set_reference_statement.value.field_to_match != null ? [regex_pattern_set_reference_statement.value.field_to_match] : []
+                              content {
+                                dynamic "all_query_arguments" {
+                                  for_each = lookup(field_to_match.value, "all_query_arguments", null) != null ? [1] : []
+
+                                  content {}
+                                }
+
+                                dynamic "body" {
+                                  for_each = lookup(field_to_match.value, "body", null) != null ? [1] : []
+
+                                  content {}
+                                }
+
+                                dynamic "method" {
+                                  for_each = lookup(field_to_match.value, "method", null) != null ? [1] : []
+
+                                  content {}
+                                }
+
+                                dynamic "query_string" {
+                                  for_each = lookup(field_to_match.value, "query_string", null) != null ? [1] : []
+
+                                  content {}
+                                }
+
+                                dynamic "single_header" {
+                                  for_each = lookup(field_to_match.value, "single_header", null) != null ? [field_to_match.value.single_header] : []
+
+                                  content {
+                                    name = single_header.value.name
+                                  }
+                                }
+
+                                dynamic "single_query_argument" {
+                                  for_each = lookup(field_to_match.value, "single_query_argument", null) != null ? [field_to_match.value.single_query_argument] : []
+
+                                  content {
+                                    name = single_query_argument.value.name
+                                  }
+                                }
+
+                                dynamic "uri_path" {
+                                  for_each = lookup(field_to_match.value, "uri_path", null) != null ? [1] : []
+
+                                  content {}
+                                }
+                              }
+                            }
+
+                            dynamic "text_transformation" {
+                              for_each = regex_pattern_set_reference_statement.value.text_transformation != null ? regex_pattern_set_reference_statement.value.text_transformation : []
+
+                              content {
+                                priority = text_transformation.value.priority
+                                type     = text_transformation.value.type
+                              }
+                            }
+                          }
+                        }
+                        dynamic "label_match_statement" {
+                          for_each = nested_statement.value.type == "label_match_statement" ? [jsondecode(nested_statement.value.statement)] : []
+                          content {
+                            scope = label_match_statement.value.scope
+                            key   = label_match_statement.value.key
+                          }
+                        }
+                        dynamic "not_statement" {
+                          for_each = nested_statement.value.type == "not_byte_match_statement" || nested_statement.value.type == "not_label_match_statement" || nested_statement.value.type == "not_regex_pattern_set_reference_statement" ? [jsondecode(nested_statement.value.statement)] : []
+                          content {
+                            dynamic "statement" {
+                              iterator = nested_not_statement
+                              for_each = nested_statement.value.type.not_byte_match_statement != null ? [1] : []
+                              content {
+
+                                dynamic "byte_match_statement" {
+                                  for_each = nested_not_statement.value.type == "not_byte_match_statement" ? [jsondecode(nested_not_statement.value.statement)] : []
+                                  content {
+                                    positional_constraint = byte_match_statement.value.positional_constraint
+                                    search_string         = byte_match_statement.value.search_string
+
+                                    dynamic "field_to_match" {
+                                      for_each = byte_match_statement.value.field_to_match != null ? [byte_match_statement.value.field_to_match] : []
+                                      content {
+                                        dynamic "all_query_arguments" {
+                                          for_each = lookup(field_to_match.value, "all_query_arguments", null) != null ? [1] : []
+
+                                          content {}
+                                        }
+
+                                        dynamic "body" {
+                                          for_each = lookup(field_to_match.value, "body", null) != null ? [1] : []
+
+                                          content {}
+                                        }
+
+                                        dynamic "method" {
+                                          for_each = lookup(field_to_match.value, "method", null) != null ? [1] : []
+
+                                          content {}
+                                        }
+
+                                        dynamic "query_string" {
+                                          for_each = lookup(field_to_match.value, "query_string", null) != null ? [1] : []
+
+                                          content {}
+                                        }
+
+                                        dynamic "single_header" {
+                                          for_each = lookup(field_to_match.value, "single_header", null) != null ? [field_to_match.value.single_header] : []
+
+                                          content {
+                                            name = single_header.value.name
+                                          }
+                                        }
+
+                                        dynamic "single_query_argument" {
+                                          for_each = lookup(field_to_match.value, "single_query_argument", null) != null ? [field_to_match.value.single_query_argument] : []
+
+                                          content {
+                                            name = single_query_argument.value.name
+                                          }
+                                        }
+
+                                        dynamic "uri_path" {
+                                          for_each = lookup(field_to_match.value, "uri_path", null) != null ? [1] : []
+
+                                          content {}
+                                        }
+                                      }
+                                    }
+
+                                    dynamic "text_transformation" {
+                                      for_each = byte_match_statement.value.text_transformation != null ? byte_match_statement.value.text_transformation : []
+
+                                      content {
+                                        priority = text_transformation.value.priority
+                                        type     = text_transformation.value.type
+                                      }
+                                    }
+                                  }
+                                }
+                              }
+                            }
+                            dynamic "statement" {
+                              iterator = nested_not_statement
+                              for_each = nested_statement.value.type.not_label_match_statement != null ? [1] : []
+                              content {
+                                dynamic "label_match_statement" {
+                                  for_each = nested_not_statement.value.type == "not_label_match_statement" ? [jsondecode(nested_not_statement.value.statement)] : []
+                                  content {
+                                    scope = label_match_statement.value.scope
+                                    key   = label_match_statement.value.key
+                                  }
+                                }
+                              }
+                            }
+                            dynamic "statement" {
+                              iterator = nested_not_statement
+                              for_each = nested_statement.value.type.not_regex_pattern_set_reference_statement != null ? [1] : []
+                              content {
+                                dynamic "regex_pattern_set_reference_statement" {
+                                  for_each = nested_not_statement.value.type == "not_regex_pattern_set_reference_statement" ? [jsondecode(nested_not_statement.value.statement)] : []
+                                  content {
+                                    arn = regex_pattern_set_reference_statement.value.arn
+
+                                    dynamic "field_to_match" {
+                                      for_each = regex_pattern_set_reference_statement.value.field_to_match != null ? [regex_pattern_set_reference_statement.value.field_to_match] : []
+                                      content {
+                                        dynamic "all_query_arguments" {
+                                          for_each = lookup(field_to_match.value, "all_query_arguments", null) != null ? [1] : []
+
+                                          content {}
+                                        }
+
+                                        dynamic "body" {
+                                          for_each = lookup(field_to_match.value, "body", null) != null ? [1] : []
+
+                                          content {}
+                                        }
+
+                                        dynamic "method" {
+                                          for_each = lookup(field_to_match.value, "method", null) != null ? [1] : []
+
+                                          content {}
+                                        }
+
+                                        dynamic "query_string" {
+                                          for_each = lookup(field_to_match.value, "query_string", null) != null ? [1] : []
+
+                                          content {}
+                                        }
+
+                                        dynamic "single_header" {
+                                          for_each = lookup(field_to_match.value, "single_header", null) != null ? [field_to_match.value.single_header] : []
+
+                                          content {
+                                            name = single_header.value.name
+                                          }
+                                        }
+
+                                        dynamic "single_query_argument" {
+                                          for_each = lookup(field_to_match.value, "single_query_argument", null) != null ? [field_to_match.value.single_query_argument] : []
+
+                                          content {
+                                            name = single_query_argument.value.name
+                                          }
+                                        }
+
+                                        dynamic "uri_path" {
+                                          for_each = lookup(field_to_match.value, "uri_path", null) != null ? [1] : []
+
+                                          content {}
+                                        }
+                                      }
+                                    }
+
+                                    dynamic "text_transformation" {
+                                      for_each = regex_pattern_set_reference_statement.value.text_transformation != null ? regex_pattern_set_reference_statement.value.text_transformation : []
+
+                                      content {
+                                        priority = text_transformation.value.priority
+                                        type     = text_transformation.value.type
+                                      }
+                                    }
+                                  }
+                                }
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+                dynamic "or_statement" {
+                  for_each = lookup(scope_down_statement.value, "or_statement", null) != null ? [scope_down_statement.value.or_statement] : []
+                  content {
+                    dynamic "statement" {
+                      iterator = nested_statement
+                      for_each = or_statement.value.statements
+                      content {
+                        dynamic "byte_match_statement" {
+                          for_each = nested_statement.value.type == "byte_match_statement" ? [jsondecode(nested_statement.value.statement)] : []
+                          content {
+                            positional_constraint = byte_match_statement.value.positional_constraint
+                            search_string         = byte_match_statement.value.search_string
+
+                            dynamic "field_to_match" {
+                              for_each = byte_match_statement.value.field_to_match != null ? [byte_match_statement.value.field_to_match] : []
+
+                              content {
+                                dynamic "all_query_arguments" {
+                                  for_each = lookup(field_to_match.value, "all_query_arguments", null) != null ? [1] : []
+
+                                  content {}
+                                }
+
+                                dynamic "body" {
+                                  for_each = lookup(field_to_match.value, "body", null) != null ? [1] : []
+
+                                  content {}
+                                }
+
+                                dynamic "method" {
+                                  for_each = lookup(field_to_match.value, "method", null) != null ? [1] : []
+
+                                  content {}
+                                }
+
+                                dynamic "query_string" {
+                                  for_each = lookup(field_to_match.value, "query_string", null) != null ? [1] : []
+
+                                  content {}
+                                }
+
+                                dynamic "single_header" {
+                                  for_each = lookup(field_to_match.value, "single_header", null) != null ? [field_to_match.value.single_header] : []
+
+                                  content {
+                                    name = single_header.value.name
+                                  }
+                                }
+
+                                dynamic "single_query_argument" {
+                                  for_each = lookup(field_to_match.value, "single_query_argument", null) != null ? [field_to_match.value.single_query_argument] : []
+
+                                  content {
+                                    name = single_query_argument.value.name
+                                  }
+                                }
+
+                                dynamic "uri_path" {
+                                  for_each = lookup(field_to_match.value, "uri_path", null) != null ? [1] : []
+
+                                  content {}
+                                }
+                              }
+                            }
+
+                            dynamic "text_transformation" {
+                              for_each = byte_match_statement.value.text_transformation != null ? byte_match_statement.value.text_transformation : []
+
+                              content {
+                                priority = text_transformation.value.priority
+                                type     = text_transformation.value.type
+                              }
+                            }
+                          }
+                        }
+                        dynamic "regex_pattern_set_reference_statement" {
+                          for_each = nested_statement.value.type == "regex_pattern_set_reference_statement" ? [jsondecode(nested_statement.value.statement)] : []
+                          content {
+                            arn = regex_pattern_set_reference_statement.value.arn
+
+                            dynamic "field_to_match" {
+                              for_each = regex_pattern_set_reference_statement.value.field_to_match != null ? [regex_pattern_set_reference_statement.value.field_to_match] : []
+                              content {
+                                dynamic "all_query_arguments" {
+                                  for_each = lookup(field_to_match.value, "all_query_arguments", null) != null ? [1] : []
+
+                                  content {}
+                                }
+
+                                dynamic "body" {
+                                  for_each = lookup(field_to_match.value, "body", null) != null ? [1] : []
+
+                                  content {}
+                                }
+
+                                dynamic "method" {
+                                  for_each = lookup(field_to_match.value, "method", null) != null ? [1] : []
+
+                                  content {}
+                                }
+
+                                dynamic "query_string" {
+                                  for_each = lookup(field_to_match.value, "query_string", null) != null ? [1] : []
+
+                                  content {}
+                                }
+
+                                dynamic "single_header" {
+                                  for_each = lookup(field_to_match.value, "single_header", null) != null ? [field_to_match.value.single_header] : []
+
+                                  content {
+                                    name = single_header.value.name
+                                  }
+                                }
+
+                                dynamic "single_query_argument" {
+                                  for_each = lookup(field_to_match.value, "single_query_argument", null) != null ? [field_to_match.value.single_query_argument] : []
+
+                                  content {
+                                    name = single_query_argument.value.name
+                                  }
+                                }
+
+                                dynamic "uri_path" {
+                                  for_each = lookup(field_to_match.value, "uri_path", null) != null ? [1] : []
+
+                                  content {}
+                                }
+                              }
+                            }
+
+                            dynamic "text_transformation" {
+                              for_each = regex_pattern_set_reference_statement.value.text_transformation != null ? regex_pattern_set_reference_statement.value.text_transformation : []
+
+                              content {
+                                priority = text_transformation.value.priority
+                                type     = text_transformation.value.type
+                              }
+                            }
+                          }
+                        }
+                        dynamic "label_match_statement" {
+                          for_each = nested_statement.value.type == "label_match_statement" ? [jsondecode(nested_statement.value.statement)] : []
+                          content {
+                            scope = label_match_statement.value.scope
+                            key   = label_match_statement.value.key
+                          }
+                        }
+                        dynamic "not_statement" {
+                          for_each = nested_statement.value.type == "not_byte_match_statement" || nested_statement.value.type == "not_label_match_statement" || nested_statement.value.type == "not_regex_pattern_set_reference_statement" ? [jsondecode(nested_statement.value.statement)] : []
+                          content {
+                            dynamic "statement" {
+                              iterator = nested_not_statement
+                              for_each = nested_statement.value.type.not_byte_match_statement != null ? [1] : []
+                              content {
+
+                                dynamic "byte_match_statement" {
+                                  for_each = nested_not_statement.value.type == "not_byte_match_statement" ? [jsondecode(nested_not_statement.value.statement)] : []
+                                  content {
+                                    positional_constraint = byte_match_statement.value.positional_constraint
+                                    search_string         = byte_match_statement.value.search_string
+
+                                    dynamic "field_to_match" {
+                                      for_each = byte_match_statement.value.field_to_match != null ? [byte_match_statement.value.field_to_match] : []
+                                      content {
+                                        dynamic "all_query_arguments" {
+                                          for_each = lookup(field_to_match.value, "all_query_arguments", null) != null ? [1] : []
+
+                                          content {}
+                                        }
+
+                                        dynamic "body" {
+                                          for_each = lookup(field_to_match.value, "body", null) != null ? [1] : []
+
+                                          content {}
+                                        }
+
+                                        dynamic "method" {
+                                          for_each = lookup(field_to_match.value, "method", null) != null ? [1] : []
+
+                                          content {}
+                                        }
+
+                                        dynamic "query_string" {
+                                          for_each = lookup(field_to_match.value, "query_string", null) != null ? [1] : []
+
+                                          content {}
+                                        }
+
+                                        dynamic "single_header" {
+                                          for_each = lookup(field_to_match.value, "single_header", null) != null ? [field_to_match.value.single_header] : []
+
+                                          content {
+                                            name = single_header.value.name
+                                          }
+                                        }
+
+                                        dynamic "single_query_argument" {
+                                          for_each = lookup(field_to_match.value, "single_query_argument", null) != null ? [field_to_match.value.single_query_argument] : []
+
+                                          content {
+                                            name = single_query_argument.value.name
+                                          }
+                                        }
+
+                                        dynamic "uri_path" {
+                                          for_each = lookup(field_to_match.value, "uri_path", null) != null ? [1] : []
+
+                                          content {}
+                                        }
+                                      }
+                                    }
+
+                                    dynamic "text_transformation" {
+                                      for_each = byte_match_statement.value.text_transformation != null ? byte_match_statement.value.text_transformation : []
+
+                                      content {
+                                        priority = text_transformation.value.priority
+                                        type     = text_transformation.value.type
+                                      }
+                                    }
+                                  }
+                                }
+                              }
+                            }
+                            dynamic "statement" {
+                              iterator = nested_not_statement
+                              for_each = nested_statement.value.type.not_label_match_statement != null ? [1] : []
+                              content {
+                                dynamic "label_match_statement" {
+                                  for_each = nested_not_statement.value.type == "not_label_match_statement" ? [jsondecode(nested_not_statement.value.statement)] : []
+                                  content {
+                                    scope = label_match_statement.value.scope
+                                    key   = label_match_statement.value.key
+                                  }
+                                }
+                              }
+                            }
+                            dynamic "statement" {
+                              iterator = nested_not_statement
+                              for_each = nested_statement.value.type.not_regex_pattern_set_reference_statement != null ? [1] : []
+                              content {
+                                dynamic "regex_pattern_set_reference_statement" {
+                                  for_each = nested_not_statement.value.type == "not_regex_pattern_set_reference_statement" ? [jsondecode(nested_not_statement.value.statement)] : []
+                                  content {
+                                    arn = regex_pattern_set_reference_statement.value.arn
+
+                                    dynamic "field_to_match" {
+                                      for_each = regex_pattern_set_reference_statement.value.field_to_match != null ? [regex_pattern_set_reference_statement.value.field_to_match] : []
+                                      content {
+                                        dynamic "all_query_arguments" {
+                                          for_each = lookup(field_to_match.value, "all_query_arguments", null) != null ? [1] : []
+
+                                          content {}
+                                        }
+
+                                        dynamic "body" {
+                                          for_each = lookup(field_to_match.value, "body", null) != null ? [1] : []
+
+                                          content {}
+                                        }
+
+                                        dynamic "method" {
+                                          for_each = lookup(field_to_match.value, "method", null) != null ? [1] : []
+
+                                          content {}
+                                        }
+
+                                        dynamic "query_string" {
+                                          for_each = lookup(field_to_match.value, "query_string", null) != null ? [1] : []
+
+                                          content {}
+                                        }
+
+                                        dynamic "single_header" {
+                                          for_each = lookup(field_to_match.value, "single_header", null) != null ? [field_to_match.value.single_header] : []
+
+                                          content {
+                                            name = single_header.value.name
+                                          }
+                                        }
+
+                                        dynamic "single_query_argument" {
+                                          for_each = lookup(field_to_match.value, "single_query_argument", null) != null ? [field_to_match.value.single_query_argument] : []
+
+                                          content {
+                                            name = single_query_argument.value.name
+                                          }
+                                        }
+
+                                        dynamic "uri_path" {
+                                          for_each = lookup(field_to_match.value, "uri_path", null) != null ? [1] : []
+
+                                          content {}
+                                        }
+                                      }
+                                    }
+
+                                    dynamic "text_transformation" {
+                                      for_each = regex_pattern_set_reference_statement.value.text_transformation != null ? regex_pattern_set_reference_statement.value.text_transformation : []
+
+                                      content {
+                                        priority = text_transformation.value.priority
+                                        type     = text_transformation.value.type
+                                      }
+                                    }
+                                  }
+                                }
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
               }
             }
           }
@@ -3343,11 +4289,12 @@ resource "aws_wafv2_web_acl" "default" {
 
       statement {
         dynamic "size_constraint_statement" {
+          iterator = stmt
           for_each = lookup(rule.value, "statement", null) != null ? [rule.value.statement] : []
 
           content {
-            comparison_operator = size_constraint_statement.value.comparison_operator
-            size                = size_constraint_statement.value.size
+            comparison_operator = stmt.value.comparison_operator
+            size                = stmt.value.size
 
             dynamic "field_to_match" {
               for_each = lookup(rule.value.statement, "field_to_match", null) != null ? [rule.value.statement.field_to_match] : []
@@ -3480,10 +4427,10 @@ resource "aws_wafv2_web_acl" "default" {
 
       statement {
         dynamic "sqli_match_statement" {
+          iterator = stmt
           for_each = lookup(rule.value, "statement", null) != null ? [rule.value.statement] : []
 
           content {
-
             dynamic "field_to_match" {
               for_each = lookup(rule.value.statement, "field_to_match", null) != null ? [rule.value.statement.field_to_match] : []
 
@@ -3548,6 +4495,945 @@ resource "aws_wafv2_web_acl" "default" {
                 type     = text_transformation.value.type
               }
             }
+            dynamic "scope_down_statement" {
+              for_each = lookup(stmt.value, "scope_down_statement", null) != null ? [stmt.value.scope_down_statement] : []
+              content {
+                dynamic "regex_pattern_set_reference_statement" {
+                  for_each = scope_down_statement.value.regex_pattern_set_reference_statement != null ? [scope_down_statement.value.regex_pattern_set_reference_statement] : []
+                  content {
+                    arn = regex_pattern_set_reference_statement.value.arn
+
+                    dynamic "field_to_match" {
+                      for_each = regex_pattern_set_reference_statement.value.field_to_match != null ? [regex_pattern_set_reference_statement.value.field_to_match] : []
+                      content {
+                        dynamic "all_query_arguments" {
+                          for_each = lookup(field_to_match.value, "all_query_arguments", null) != null ? [1] : []
+
+                          content {}
+                        }
+
+                        dynamic "body" {
+                          for_each = lookup(field_to_match.value, "body", null) != null ? [1] : []
+
+                          content {}
+                        }
+
+                        dynamic "method" {
+                          for_each = lookup(field_to_match.value, "method", null) != null ? [1] : []
+
+                          content {}
+                        }
+
+                        dynamic "query_string" {
+                          for_each = lookup(field_to_match.value, "query_string", null) != null ? [1] : []
+
+                          content {}
+                        }
+
+                        dynamic "single_header" {
+                          for_each = lookup(field_to_match.value, "single_header", null) != null ? [field_to_match.value.single_header] : []
+
+                          content {
+                            name = single_header.value.name
+                          }
+                        }
+
+                        dynamic "single_query_argument" {
+                          for_each = lookup(field_to_match.value, "single_query_argument", null) != null ? [field_to_match.value.single_query_argument] : []
+
+                          content {
+                            name = single_query_argument.value.name
+                          }
+                        }
+
+                        dynamic "uri_path" {
+                          for_each = lookup(field_to_match.value, "uri_path", null) != null ? [1] : []
+
+                          content {}
+                        }
+                      }
+                    }
+
+                    dynamic "text_transformation" {
+                      for_each = regex_pattern_set_reference_statement.value.text_transformation != null ? regex_pattern_set_reference_statement.value.text_transformation : []
+
+                      content {
+                        priority = text_transformation.value.priority
+                        type     = text_transformation.value.type
+                      }
+                    }
+                  }
+                }
+                dynamic "label_match_statement" {
+                  for_each = scope_down_statement.value.label_match_statement != null ? [scope_down_statement.value.label_match_statement] : []
+                  content {
+                    scope = label_match_statement.value.scope
+                    key   = label_match_statement.value.key
+                  }
+                }
+                dynamic "byte_match_statement" {
+                  for_each = scope_down_statement.value.byte_match_statement != null ? [scope_down_statement.value.byte_match_statement] : []
+                  content {
+                    positional_constraint = byte_match_statement.value.positional_constraint
+                    search_string         = byte_match_statement.value.search_string
+
+                    dynamic "field_to_match" {
+                      for_each = byte_match_statement.value.field_to_match != null ? [byte_match_statement.value.field_to_match] : []
+
+                      content {
+                        dynamic "all_query_arguments" {
+                          for_each = lookup(field_to_match.value, "all_query_arguments", null) != null ? [1] : []
+
+                          content {}
+                        }
+
+                        dynamic "body" {
+                          for_each = lookup(field_to_match.value, "body", null) != null ? [1] : []
+
+                          content {}
+                        }
+
+                        dynamic "method" {
+                          for_each = lookup(field_to_match.value, "method", null) != null ? [1] : []
+
+                          content {}
+                        }
+
+                        dynamic "query_string" {
+                          for_each = lookup(field_to_match.value, "query_string", null) != null ? [1] : []
+
+                          content {}
+                        }
+
+                        dynamic "single_header" {
+                          for_each = lookup(field_to_match.value, "single_header", null) != null ? [field_to_match.value.single_header] : []
+
+                          content {
+                            name = single_header.value.name
+                          }
+                        }
+
+                        dynamic "single_query_argument" {
+                          for_each = lookup(field_to_match.value, "single_query_argument", null) != null ? [field_to_match.value.single_query_argument] : []
+
+                          content {
+                            name = single_query_argument.value.name
+                          }
+                        }
+
+                        dynamic "uri_path" {
+                          for_each = lookup(field_to_match.value, "uri_path", null) != null ? [1] : []
+
+                          content {}
+                        }
+                      }
+                    }
+
+                    dynamic "text_transformation" {
+                      for_each = byte_match_statement.value.text_transformation != null ? byte_match_statement.value.text_transformation : []
+
+                      content {
+                        priority = text_transformation.value.priority
+                        type     = text_transformation.value.type
+                      }
+                    }
+                  }
+                }
+                dynamic "not_statement" {
+                  for_each = scope_down_statement.value.not_byte_match_statement != null || scope_down_statement.value.not_label_match_statement != null || scope_down_statement.value.not_regex_pattern_set_reference_statement != null ? [1] : []
+                  content {
+                    dynamic "statement" {
+                      for_each = scope_down_statement.value.not_byte_match_statement != null ? [1] : []
+                      content {
+                        dynamic "byte_match_statement" {
+                          for_each = statement.value.not_byte_match_statement != null ? [statement.value.not_byte_match_statement] : []
+                          content {
+                            positional_constraint = byte_match_statement.value.positional_constraint
+                            search_string         = byte_match_statement.value.search_string
+
+                            dynamic "field_to_match" {
+                              for_each = byte_match_statement.value.field_to_match != null ? [byte_match_statement.value.field_to_match] : []
+                              content {
+                                dynamic "all_query_arguments" {
+                                  for_each = lookup(field_to_match.value, "all_query_arguments", null) != null ? [1] : []
+
+                                  content {}
+                                }
+
+                                dynamic "body" {
+                                  for_each = lookup(field_to_match.value, "body", null) != null ? [1] : []
+
+                                  content {}
+                                }
+
+                                dynamic "method" {
+                                  for_each = lookup(field_to_match.value, "method", null) != null ? [1] : []
+
+                                  content {}
+                                }
+
+                                dynamic "query_string" {
+                                  for_each = lookup(field_to_match.value, "query_string", null) != null ? [1] : []
+
+                                  content {}
+                                }
+
+                                dynamic "single_header" {
+                                  for_each = lookup(field_to_match.value, "single_header", null) != null ? [field_to_match.value.single_header] : []
+
+                                  content {
+                                    name = single_header.value.name
+                                  }
+                                }
+
+                                dynamic "single_query_argument" {
+                                  for_each = lookup(field_to_match.value, "single_query_argument", null) != null ? [field_to_match.value.single_query_argument] : []
+
+                                  content {
+                                    name = single_query_argument.value.name
+                                  }
+                                }
+
+                                dynamic "uri_path" {
+                                  for_each = lookup(field_to_match.value, "uri_path", null) != null ? [1] : []
+
+                                  content {}
+                                }
+                              }
+                            }
+
+                            dynamic "text_transformation" {
+                              for_each = byte_match_statement.value.text_transformation != null ? byte_match_statement.value.text_transformation : []
+
+                              content {
+                                priority = text_transformation.value.priority
+                                type     = text_transformation.value.type
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                    dynamic "statement" {
+                      for_each = scope_down_statement.value.not_label_match_statement != null ? [1] : []
+                      content {
+                        dynamic "label_match_statement" {
+                          for_each = statement.value.not_label_match_statement != null ? [statement.value.not_label_match_statement] : []
+                          content {
+                            scope = label_match_statement.value.scope
+                            key   = label_match_statement.value.key
+                          }
+                        }
+                      }
+                    }
+                    dynamic "statement" {
+                      for_each = scope_down_statement.value.not_regex_pattern_set_reference_statement != null ? [1] : []
+                      content {
+                        dynamic "regex_pattern_set_reference_statement" {
+                          for_each = statement.value.not_regex_pattern_set_reference_statement != null ? [statement.value.not_regex_pattern_set_reference_statement] : []
+                          content {
+                            arn = regex_pattern_set_reference_statement.value.arn
+
+                            dynamic "field_to_match" {
+                              for_each = regex_pattern_set_reference_statement.value.field_to_match != null ? [regex_pattern_set_reference_statement.value.field_to_match] : []
+                              content {
+                                dynamic "all_query_arguments" {
+                                  for_each = lookup(field_to_match.value, "all_query_arguments", null) != null ? [1] : []
+
+                                  content {}
+                                }
+
+                                dynamic "body" {
+                                  for_each = lookup(field_to_match.value, "body", null) != null ? [1] : []
+
+                                  content {}
+                                }
+
+                                dynamic "method" {
+                                  for_each = lookup(field_to_match.value, "method", null) != null ? [1] : []
+
+                                  content {}
+                                }
+
+                                dynamic "query_string" {
+                                  for_each = lookup(field_to_match.value, "query_string", null) != null ? [1] : []
+
+                                  content {}
+                                }
+
+                                dynamic "single_header" {
+                                  for_each = lookup(field_to_match.value, "single_header", null) != null ? [field_to_match.value.single_header] : []
+
+                                  content {
+                                    name = single_header.value.name
+                                  }
+                                }
+
+                                dynamic "single_query_argument" {
+                                  for_each = lookup(field_to_match.value, "single_query_argument", null) != null ? [field_to_match.value.single_query_argument] : []
+
+                                  content {
+                                    name = single_query_argument.value.name
+                                  }
+                                }
+
+                                dynamic "uri_path" {
+                                  for_each = lookup(field_to_match.value, "uri_path", null) != null ? [1] : []
+
+                                  content {}
+                                }
+                              }
+                            }
+
+                            dynamic "text_transformation" {
+                              for_each = regex_pattern_set_reference_statement.value.text_transformation != null ? regex_pattern_set_reference_statement.value.text_transformation : []
+
+                              content {
+                                priority = text_transformation.value.priority
+                                type     = text_transformation.value.type
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+                // Working Rendering from encoded json
+                dynamic "and_statement" {
+                  for_each = lookup(scope_down_statement.value, "and_statement", null) != null ? [scope_down_statement.value.and_statement] : []
+                  content {
+                    dynamic "statement" {
+                      iterator = nested_statement
+                      for_each = and_statement.value.statements
+                      content {
+                        dynamic "byte_match_statement" {
+                          for_each = nested_statement.value.type == "byte_match_statement" ? [jsondecode(nested_statement.value.statement)] : []
+                          content {
+                            positional_constraint = byte_match_statement.value.positional_constraint
+                            search_string         = byte_match_statement.value.search_string
+
+                            dynamic "field_to_match" {
+                              for_each = byte_match_statement.value.field_to_match != null ? [byte_match_statement.value.field_to_match] : []
+
+                              content {
+                                dynamic "all_query_arguments" {
+                                  for_each = lookup(field_to_match.value, "all_query_arguments", null) != null ? [1] : []
+
+                                  content {}
+                                }
+
+                                dynamic "body" {
+                                  for_each = lookup(field_to_match.value, "body", null) != null ? [1] : []
+
+                                  content {}
+                                }
+
+                                dynamic "method" {
+                                  for_each = lookup(field_to_match.value, "method", null) != null ? [1] : []
+
+                                  content {}
+                                }
+
+                                dynamic "query_string" {
+                                  for_each = lookup(field_to_match.value, "query_string", null) != null ? [1] : []
+
+                                  content {}
+                                }
+
+                                dynamic "single_header" {
+                                  for_each = lookup(field_to_match.value, "single_header", null) != null ? [field_to_match.value.single_header] : []
+
+                                  content {
+                                    name = single_header.value.name
+                                  }
+                                }
+
+                                dynamic "single_query_argument" {
+                                  for_each = lookup(field_to_match.value, "single_query_argument", null) != null ? [field_to_match.value.single_query_argument] : []
+
+                                  content {
+                                    name = single_query_argument.value.name
+                                  }
+                                }
+
+                                dynamic "uri_path" {
+                                  for_each = lookup(field_to_match.value, "uri_path", null) != null ? [1] : []
+
+                                  content {}
+                                }
+                              }
+                            }
+
+                            dynamic "text_transformation" {
+                              for_each = byte_match_statement.value.text_transformation != null ? byte_match_statement.value.text_transformation : []
+
+                              content {
+                                priority = text_transformation.value.priority
+                                type     = text_transformation.value.type
+                              }
+                            }
+                          }
+                        }
+                        dynamic "regex_pattern_set_reference_statement" {
+                          for_each = nested_statement.value.type == "regex_pattern_set_reference_statement" ? [jsondecode(nested_statement.value.statement)] : []
+                          content {
+                            arn = regex_pattern_set_reference_statement.value.arn
+
+                            dynamic "field_to_match" {
+                              for_each = regex_pattern_set_reference_statement.value.field_to_match != null ? [regex_pattern_set_reference_statement.value.field_to_match] : []
+                              content {
+                                dynamic "all_query_arguments" {
+                                  for_each = lookup(field_to_match.value, "all_query_arguments", null) != null ? [1] : []
+
+                                  content {}
+                                }
+
+                                dynamic "body" {
+                                  for_each = lookup(field_to_match.value, "body", null) != null ? [1] : []
+
+                                  content {}
+                                }
+
+                                dynamic "method" {
+                                  for_each = lookup(field_to_match.value, "method", null) != null ? [1] : []
+
+                                  content {}
+                                }
+
+                                dynamic "query_string" {
+                                  for_each = lookup(field_to_match.value, "query_string", null) != null ? [1] : []
+
+                                  content {}
+                                }
+
+                                dynamic "single_header" {
+                                  for_each = lookup(field_to_match.value, "single_header", null) != null ? [field_to_match.value.single_header] : []
+
+                                  content {
+                                    name = single_header.value.name
+                                  }
+                                }
+
+                                dynamic "single_query_argument" {
+                                  for_each = lookup(field_to_match.value, "single_query_argument", null) != null ? [field_to_match.value.single_query_argument] : []
+
+                                  content {
+                                    name = single_query_argument.value.name
+                                  }
+                                }
+
+                                dynamic "uri_path" {
+                                  for_each = lookup(field_to_match.value, "uri_path", null) != null ? [1] : []
+
+                                  content {}
+                                }
+                              }
+                            }
+
+                            dynamic "text_transformation" {
+                              for_each = regex_pattern_set_reference_statement.value.text_transformation != null ? regex_pattern_set_reference_statement.value.text_transformation : []
+
+                              content {
+                                priority = text_transformation.value.priority
+                                type     = text_transformation.value.type
+                              }
+                            }
+                          }
+                        }
+                        dynamic "label_match_statement" {
+                          for_each = nested_statement.value.type == "label_match_statement" ? [jsondecode(nested_statement.value.statement)] : []
+                          content {
+                            scope = label_match_statement.value.scope
+                            key   = label_match_statement.value.key
+                          }
+                        }
+                        dynamic "not_statement" {
+                          for_each = nested_statement.value.type == "not_byte_match_statement" || nested_statement.value.type == "not_label_match_statement" || nested_statement.value.type == "not_regex_pattern_set_reference_statement" ? [jsondecode(nested_statement.value.statement)] : []
+                          content {
+                            dynamic "statement" {
+                              iterator = nested_not_statement
+                              for_each = nested_statement.value.type.not_byte_match_statement != null ? [1] : []
+                              content {
+
+                                dynamic "byte_match_statement" {
+                                  for_each = nested_not_statement.value.type == "not_byte_match_statement" ? [jsondecode(nested_not_statement.value.statement)] : []
+                                  content {
+                                    positional_constraint = byte_match_statement.value.positional_constraint
+                                    search_string         = byte_match_statement.value.search_string
+
+                                    dynamic "field_to_match" {
+                                      for_each = byte_match_statement.value.field_to_match != null ? [byte_match_statement.value.field_to_match] : []
+                                      content {
+                                        dynamic "all_query_arguments" {
+                                          for_each = lookup(field_to_match.value, "all_query_arguments", null) != null ? [1] : []
+
+                                          content {}
+                                        }
+
+                                        dynamic "body" {
+                                          for_each = lookup(field_to_match.value, "body", null) != null ? [1] : []
+
+                                          content {}
+                                        }
+
+                                        dynamic "method" {
+                                          for_each = lookup(field_to_match.value, "method", null) != null ? [1] : []
+
+                                          content {}
+                                        }
+
+                                        dynamic "query_string" {
+                                          for_each = lookup(field_to_match.value, "query_string", null) != null ? [1] : []
+
+                                          content {}
+                                        }
+
+                                        dynamic "single_header" {
+                                          for_each = lookup(field_to_match.value, "single_header", null) != null ? [field_to_match.value.single_header] : []
+
+                                          content {
+                                            name = single_header.value.name
+                                          }
+                                        }
+
+                                        dynamic "single_query_argument" {
+                                          for_each = lookup(field_to_match.value, "single_query_argument", null) != null ? [field_to_match.value.single_query_argument] : []
+
+                                          content {
+                                            name = single_query_argument.value.name
+                                          }
+                                        }
+
+                                        dynamic "uri_path" {
+                                          for_each = lookup(field_to_match.value, "uri_path", null) != null ? [1] : []
+
+                                          content {}
+                                        }
+                                      }
+                                    }
+
+                                    dynamic "text_transformation" {
+                                      for_each = byte_match_statement.value.text_transformation != null ? byte_match_statement.value.text_transformation : []
+
+                                      content {
+                                        priority = text_transformation.value.priority
+                                        type     = text_transformation.value.type
+                                      }
+                                    }
+                                  }
+                                }
+                              }
+                            }
+                            dynamic "statement" {
+                              iterator = nested_not_statement
+                              for_each = nested_statement.value.type.not_label_match_statement != null ? [1] : []
+                              content {
+                                dynamic "label_match_statement" {
+                                  for_each = nested_not_statement.value.type == "not_label_match_statement" ? [jsondecode(nested_not_statement.value.statement)] : []
+                                  content {
+                                    scope = label_match_statement.value.scope
+                                    key   = label_match_statement.value.key
+                                  }
+                                }
+                              }
+                            }
+                            dynamic "statement" {
+                              iterator = nested_not_statement
+                              for_each = nested_statement.value.type.not_regex_pattern_set_reference_statement != null ? [1] : []
+                              content {
+                                dynamic "regex_pattern_set_reference_statement" {
+                                  for_each = nested_not_statement.value.type == "not_regex_pattern_set_reference_statement" ? [jsondecode(nested_not_statement.value.statement)] : []
+                                  content {
+                                    arn = regex_pattern_set_reference_statement.value.arn
+
+                                    dynamic "field_to_match" {
+                                      for_each = regex_pattern_set_reference_statement.value.field_to_match != null ? [regex_pattern_set_reference_statement.value.field_to_match] : []
+                                      content {
+                                        dynamic "all_query_arguments" {
+                                          for_each = lookup(field_to_match.value, "all_query_arguments", null) != null ? [1] : []
+
+                                          content {}
+                                        }
+
+                                        dynamic "body" {
+                                          for_each = lookup(field_to_match.value, "body", null) != null ? [1] : []
+
+                                          content {}
+                                        }
+
+                                        dynamic "method" {
+                                          for_each = lookup(field_to_match.value, "method", null) != null ? [1] : []
+
+                                          content {}
+                                        }
+
+                                        dynamic "query_string" {
+                                          for_each = lookup(field_to_match.value, "query_string", null) != null ? [1] : []
+
+                                          content {}
+                                        }
+
+                                        dynamic "single_header" {
+                                          for_each = lookup(field_to_match.value, "single_header", null) != null ? [field_to_match.value.single_header] : []
+
+                                          content {
+                                            name = single_header.value.name
+                                          }
+                                        }
+
+                                        dynamic "single_query_argument" {
+                                          for_each = lookup(field_to_match.value, "single_query_argument", null) != null ? [field_to_match.value.single_query_argument] : []
+
+                                          content {
+                                            name = single_query_argument.value.name
+                                          }
+                                        }
+
+                                        dynamic "uri_path" {
+                                          for_each = lookup(field_to_match.value, "uri_path", null) != null ? [1] : []
+
+                                          content {}
+                                        }
+                                      }
+                                    }
+
+                                    dynamic "text_transformation" {
+                                      for_each = regex_pattern_set_reference_statement.value.text_transformation != null ? regex_pattern_set_reference_statement.value.text_transformation : []
+
+                                      content {
+                                        priority = text_transformation.value.priority
+                                        type     = text_transformation.value.type
+                                      }
+                                    }
+                                  }
+                                }
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+                dynamic "or_statement" {
+                  for_each = lookup(scope_down_statement.value, "or_statement", null) != null ? [scope_down_statement.value.or_statement] : []
+                  content {
+                    dynamic "statement" {
+                      iterator = nested_statement
+                      for_each = or_statement.value.statements
+                      content {
+                        dynamic "byte_match_statement" {
+                          for_each = nested_statement.value.type == "byte_match_statement" ? [jsondecode(nested_statement.value.statement)] : []
+                          content {
+                            positional_constraint = byte_match_statement.value.positional_constraint
+                            search_string         = byte_match_statement.value.search_string
+
+                            dynamic "field_to_match" {
+                              for_each = byte_match_statement.value.field_to_match != null ? [byte_match_statement.value.field_to_match] : []
+
+                              content {
+                                dynamic "all_query_arguments" {
+                                  for_each = lookup(field_to_match.value, "all_query_arguments", null) != null ? [1] : []
+
+                                  content {}
+                                }
+
+                                dynamic "body" {
+                                  for_each = lookup(field_to_match.value, "body", null) != null ? [1] : []
+
+                                  content {}
+                                }
+
+                                dynamic "method" {
+                                  for_each = lookup(field_to_match.value, "method", null) != null ? [1] : []
+
+                                  content {}
+                                }
+
+                                dynamic "query_string" {
+                                  for_each = lookup(field_to_match.value, "query_string", null) != null ? [1] : []
+
+                                  content {}
+                                }
+
+                                dynamic "single_header" {
+                                  for_each = lookup(field_to_match.value, "single_header", null) != null ? [field_to_match.value.single_header] : []
+
+                                  content {
+                                    name = single_header.value.name
+                                  }
+                                }
+
+                                dynamic "single_query_argument" {
+                                  for_each = lookup(field_to_match.value, "single_query_argument", null) != null ? [field_to_match.value.single_query_argument] : []
+
+                                  content {
+                                    name = single_query_argument.value.name
+                                  }
+                                }
+
+                                dynamic "uri_path" {
+                                  for_each = lookup(field_to_match.value, "uri_path", null) != null ? [1] : []
+
+                                  content {}
+                                }
+                              }
+                            }
+
+                            dynamic "text_transformation" {
+                              for_each = byte_match_statement.value.text_transformation != null ? byte_match_statement.value.text_transformation : []
+
+                              content {
+                                priority = text_transformation.value.priority
+                                type     = text_transformation.value.type
+                              }
+                            }
+                          }
+                        }
+                        dynamic "regex_pattern_set_reference_statement" {
+                          for_each = nested_statement.value.type == "regex_pattern_set_reference_statement" ? [jsondecode(nested_statement.value.statement)] : []
+                          content {
+                            arn = regex_pattern_set_reference_statement.value.arn
+
+                            dynamic "field_to_match" {
+                              for_each = regex_pattern_set_reference_statement.value.field_to_match != null ? [regex_pattern_set_reference_statement.value.field_to_match] : []
+                              content {
+                                dynamic "all_query_arguments" {
+                                  for_each = lookup(field_to_match.value, "all_query_arguments", null) != null ? [1] : []
+
+                                  content {}
+                                }
+
+                                dynamic "body" {
+                                  for_each = lookup(field_to_match.value, "body", null) != null ? [1] : []
+
+                                  content {}
+                                }
+
+                                dynamic "method" {
+                                  for_each = lookup(field_to_match.value, "method", null) != null ? [1] : []
+
+                                  content {}
+                                }
+
+                                dynamic "query_string" {
+                                  for_each = lookup(field_to_match.value, "query_string", null) != null ? [1] : []
+
+                                  content {}
+                                }
+
+                                dynamic "single_header" {
+                                  for_each = lookup(field_to_match.value, "single_header", null) != null ? [field_to_match.value.single_header] : []
+
+                                  content {
+                                    name = single_header.value.name
+                                  }
+                                }
+
+                                dynamic "single_query_argument" {
+                                  for_each = lookup(field_to_match.value, "single_query_argument", null) != null ? [field_to_match.value.single_query_argument] : []
+
+                                  content {
+                                    name = single_query_argument.value.name
+                                  }
+                                }
+
+                                dynamic "uri_path" {
+                                  for_each = lookup(field_to_match.value, "uri_path", null) != null ? [1] : []
+
+                                  content {}
+                                }
+                              }
+                            }
+
+                            dynamic "text_transformation" {
+                              for_each = regex_pattern_set_reference_statement.value.text_transformation != null ? regex_pattern_set_reference_statement.value.text_transformation : []
+
+                              content {
+                                priority = text_transformation.value.priority
+                                type     = text_transformation.value.type
+                              }
+                            }
+                          }
+                        }
+                        dynamic "label_match_statement" {
+                          for_each = nested_statement.value.type == "label_match_statement" ? [jsondecode(nested_statement.value.statement)] : []
+                          content {
+                            scope = label_match_statement.value.scope
+                            key   = label_match_statement.value.key
+                          }
+                        }
+                        dynamic "not_statement" {
+                          for_each = nested_statement.value.type == "not_byte_match_statement" || nested_statement.value.type == "not_label_match_statement" || nested_statement.value.type == "not_regex_pattern_set_reference_statement" ? [jsondecode(nested_statement.value.statement)] : []
+                          content {
+                            dynamic "statement" {
+                              iterator = nested_not_statement
+                              for_each = nested_statement.value.type.not_byte_match_statement != null ? [1] : []
+                              content {
+
+                                dynamic "byte_match_statement" {
+                                  for_each = nested_not_statement.value.type == "not_byte_match_statement" ? [jsondecode(nested_not_statement.value.statement)] : []
+                                  content {
+                                    positional_constraint = byte_match_statement.value.positional_constraint
+                                    search_string         = byte_match_statement.value.search_string
+
+                                    dynamic "field_to_match" {
+                                      for_each = byte_match_statement.value.field_to_match != null ? [byte_match_statement.value.field_to_match] : []
+                                      content {
+                                        dynamic "all_query_arguments" {
+                                          for_each = lookup(field_to_match.value, "all_query_arguments", null) != null ? [1] : []
+
+                                          content {}
+                                        }
+
+                                        dynamic "body" {
+                                          for_each = lookup(field_to_match.value, "body", null) != null ? [1] : []
+
+                                          content {}
+                                        }
+
+                                        dynamic "method" {
+                                          for_each = lookup(field_to_match.value, "method", null) != null ? [1] : []
+
+                                          content {}
+                                        }
+
+                                        dynamic "query_string" {
+                                          for_each = lookup(field_to_match.value, "query_string", null) != null ? [1] : []
+
+                                          content {}
+                                        }
+
+                                        dynamic "single_header" {
+                                          for_each = lookup(field_to_match.value, "single_header", null) != null ? [field_to_match.value.single_header] : []
+
+                                          content {
+                                            name = single_header.value.name
+                                          }
+                                        }
+
+                                        dynamic "single_query_argument" {
+                                          for_each = lookup(field_to_match.value, "single_query_argument", null) != null ? [field_to_match.value.single_query_argument] : []
+
+                                          content {
+                                            name = single_query_argument.value.name
+                                          }
+                                        }
+
+                                        dynamic "uri_path" {
+                                          for_each = lookup(field_to_match.value, "uri_path", null) != null ? [1] : []
+
+                                          content {}
+                                        }
+                                      }
+                                    }
+
+                                    dynamic "text_transformation" {
+                                      for_each = byte_match_statement.value.text_transformation != null ? byte_match_statement.value.text_transformation : []
+
+                                      content {
+                                        priority = text_transformation.value.priority
+                                        type     = text_transformation.value.type
+                                      }
+                                    }
+                                  }
+                                }
+                              }
+                            }
+                            dynamic "statement" {
+                              iterator = nested_not_statement
+                              for_each = nested_statement.value.type.not_label_match_statement != null ? [1] : []
+                              content {
+                                dynamic "label_match_statement" {
+                                  for_each = nested_not_statement.value.type == "not_label_match_statement" ? [jsondecode(nested_not_statement.value.statement)] : []
+                                  content {
+                                    scope = label_match_statement.value.scope
+                                    key   = label_match_statement.value.key
+                                  }
+                                }
+                              }
+                            }
+                            dynamic "statement" {
+                              iterator = nested_not_statement
+                              for_each = nested_statement.value.type.not_regex_pattern_set_reference_statement != null ? [1] : []
+                              content {
+                                dynamic "regex_pattern_set_reference_statement" {
+                                  for_each = nested_not_statement.value.type == "not_regex_pattern_set_reference_statement" ? [jsondecode(nested_not_statement.value.statement)] : []
+                                  content {
+                                    arn = regex_pattern_set_reference_statement.value.arn
+
+                                    dynamic "field_to_match" {
+                                      for_each = regex_pattern_set_reference_statement.value.field_to_match != null ? [regex_pattern_set_reference_statement.value.field_to_match] : []
+                                      content {
+                                        dynamic "all_query_arguments" {
+                                          for_each = lookup(field_to_match.value, "all_query_arguments", null) != null ? [1] : []
+
+                                          content {}
+                                        }
+
+                                        dynamic "body" {
+                                          for_each = lookup(field_to_match.value, "body", null) != null ? [1] : []
+
+                                          content {}
+                                        }
+
+                                        dynamic "method" {
+                                          for_each = lookup(field_to_match.value, "method", null) != null ? [1] : []
+
+                                          content {}
+                                        }
+
+                                        dynamic "query_string" {
+                                          for_each = lookup(field_to_match.value, "query_string", null) != null ? [1] : []
+
+                                          content {}
+                                        }
+
+                                        dynamic "single_header" {
+                                          for_each = lookup(field_to_match.value, "single_header", null) != null ? [field_to_match.value.single_header] : []
+
+                                          content {
+                                            name = single_header.value.name
+                                          }
+                                        }
+
+                                        dynamic "single_query_argument" {
+                                          for_each = lookup(field_to_match.value, "single_query_argument", null) != null ? [field_to_match.value.single_query_argument] : []
+
+                                          content {
+                                            name = single_query_argument.value.name
+                                          }
+                                        }
+
+                                        dynamic "uri_path" {
+                                          for_each = lookup(field_to_match.value, "uri_path", null) != null ? [1] : []
+
+                                          content {}
+                                        }
+                                      }
+                                    }
+
+                                    dynamic "text_transformation" {
+                                      for_each = regex_pattern_set_reference_statement.value.text_transformation != null ? regex_pattern_set_reference_statement.value.text_transformation : []
+
+                                      content {
+                                        priority = text_transformation.value.priority
+                                        type     = text_transformation.value.type
+                                      }
+                                    }
+                                  }
+                                }
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
           }
         }
       }
@@ -3609,10 +5495,10 @@ resource "aws_wafv2_web_acl" "default" {
 
       statement {
         dynamic "xss_match_statement" {
+          iterator = stmt
           for_each = lookup(rule.value, "statement", null) != null ? [rule.value.statement] : []
 
           content {
-
             dynamic "field_to_match" {
               for_each = lookup(rule.value.statement, "field_to_match", null) != null ? [rule.value.statement.field_to_match] : []
 

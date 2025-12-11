@@ -452,7 +452,7 @@ resource "aws_wafv2_web_acl" "default" {
           }
         }
         dynamic "not_statement" {
-          for_each = lookup(rule.value, "not_statement", null) != null ? [1] : []
+          for_each = lookup(rule.value, "not_statement", null) != null ? [rule.value.not_statement] : []
 
           content {
             statement {

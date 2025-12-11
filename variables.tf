@@ -242,13 +242,20 @@ variable "geo_match_statement_rules" {
         value = string
       }), null)
     }), null)
-    statement = object({
+    statement = optional(object({
       country_codes = list(string)
       forwarded_ip_config = optional(object({
         fallback_behavior = string
         header_name       = string
       }), null)
-    })
+    }))
+    not_statement = optional(object({
+      country_codes = list(string)
+      forwarded_ip_config = optional(object({
+        fallback_behavior = string
+        header_name       = string
+      }), null)
+    }))
     visibility_config = optional(object({
       cloudwatch_metrics_enabled = optional(bool)
       metric_name                = string
@@ -281,6 +288,16 @@ variable "geo_match_statement_rules" {
        A List of labels to apply to web requests that match the rule match statement
 
     statement:
+      country_codes:
+        A list of two-character country codes.
+      forwarded_ip_config:
+        fallback_behavior:
+          The match status to assign to the web request if the request doesn't have a valid IP address in the specified position.
+          Possible values: `MATCH`, `NO_MATCH`
+        header_name:
+          The name of the HTTP header to use for the IP address.
+
+    not_statement:
       country_codes:
         A list of two-character country codes.
       forwarded_ip_config:

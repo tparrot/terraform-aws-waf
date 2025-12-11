@@ -451,6 +451,31 @@ resource "aws_wafv2_web_acl" "default" {
             }
           }
         }
+        dynamic "not_statement" {
+          for_each = lookup(rule.value, "not_statement", null) != null ? [1] : []
+
+          content {
+            statement {
+              dynamic "geo_match_statement" {
+                iterator = stmt
+                for_each = lookup(not_statement.value, "statement", null) != null ? [not_statement.value.statement] : []
+
+                content {
+                  country_codes = stmt.value.country_codes
+
+                  dynamic "forwarded_ip_config" {
+                    for_each = lookup(stmt.value, "forwarded_ip_config", null) != null ? [stmt.value.forwarded_ip_config] : []
+
+                    content {
+                      fallback_behavior = forwarded_ip_config.value.fallback_behavior
+                      header_name       = forwarded_ip_config.value.header_name
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
       }
 
       dynamic "visibility_config" {

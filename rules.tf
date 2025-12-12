@@ -1348,15 +1348,15 @@ resource "aws_wafv2_web_acl" "default" {
                           }
                         }
                         dynamic "not_statement" {
-                          for_each = nested_statement.value.type == "not_byte_match_statement" || nested_statement.value.type == "not_label_match_statement" || nested_statement.value.type == "not_regex_pattern_set_reference_statement" ? [jsondecode(nested_statement.value.statement)] : []
+                          for_each = nested_statement.value.type == "not_byte_match_statement" || nested_statement.value.type == "not_label_match_statement" || nested_statement.value.type == "not_regex_pattern_set_reference_statement" ? [1] : []
                           content {
                             dynamic "statement" {
                               iterator = nested_not_statement
-                              for_each = nested_statement.value.type.not_byte_match_statement != null ? [1] : []
+                              for_each = nested_statement.value.type != null && nested_statement.value.type == "not_byte_match_statement"  ? [1] : []
                               content {
 
                                 dynamic "byte_match_statement" {
-                                  for_each = nested_not_statement.value.type == "not_byte_match_statement" ? [jsondecode(nested_not_statement.value.statement)] : []
+                                  for_each = nested_statement.value.type == "not_byte_match_statement" ? [jsondecode(nested_statement.value.statement)] : []
                                   content {
                                     positional_constraint = byte_match_statement.value.positional_constraint
                                     search_string         = byte_match_statement.value.search_string
@@ -1426,10 +1426,10 @@ resource "aws_wafv2_web_acl" "default" {
                             }
                             dynamic "statement" {
                               iterator = nested_not_statement
-                              for_each = nested_statement.value.type.not_label_match_statement != null ? [1] : []
+                              for_each = nested_statement.value.type != null && nested_statement.value.type == "not_label_match_statement"  ? [1] : []
                               content {
                                 dynamic "label_match_statement" {
-                                  for_each = nested_not_statement.value.type == "not_label_match_statement" ? [jsondecode(nested_not_statement.value.statement)] : []
+                                  for_each = nested_statement.value.type == "not_label_match_statement" ? [jsondecode(nested_statement.value.statement)] : []
                                   content {
                                     scope = label_match_statement.value.scope
                                     key   = label_match_statement.value.key
@@ -1439,10 +1439,10 @@ resource "aws_wafv2_web_acl" "default" {
                             }
                             dynamic "statement" {
                               iterator = nested_not_statement
-                              for_each = nested_statement.value.type.not_regex_pattern_set_reference_statement != null ? [1] : []
+                              for_each = nested_statement.value.type != null && nested_statement.value.type == "not_regex_pattern_set_reference_statement"  ? [1] : []
                               content {
                                 dynamic "regex_pattern_set_reference_statement" {
-                                  for_each = nested_not_statement.value.type == "not_regex_pattern_set_reference_statement" ? [jsondecode(nested_not_statement.value.statement)] : []
+                                  for_each = nested_statement.value.type == "not_regex_pattern_set_reference_statement" ? [jsondecode(nested_statement.value.statement)] : []
                                   content {
                                     arn = regex_pattern_set_reference_statement.value.arn
 
@@ -1664,15 +1664,15 @@ resource "aws_wafv2_web_acl" "default" {
                           }
                         }
                         dynamic "not_statement" {
-                          for_each = nested_statement.value.type == "not_byte_match_statement" || nested_statement.value.type == "not_label_match_statement" || nested_statement.value.type == "not_regex_pattern_set_reference_statement" ? [jsondecode(nested_statement.value.statement)] : []
+                          for_each = nested_statement.value.type == "not_byte_match_statement" || nested_statement.value.type == "not_label_match_statement" || nested_statement.value.type == "not_regex_pattern_set_reference_statement" ? [1] : []
                           content {
                             dynamic "statement" {
                               iterator = nested_not_statement
-                              for_each = nested_statement.value.type.not_byte_match_statement != null ? [1] : []
+                              for_each = nested_statement.value.type != null && nested_statement.value.type == "not_byte_match_statement"  ? [1] : []
                               content {
 
                                 dynamic "byte_match_statement" {
-                                  for_each = nested_not_statement.value.type == "not_byte_match_statement" ? [jsondecode(nested_not_statement.value.statement)] : []
+                                  for_each = nested_statement.value.type == "not_byte_match_statement" ? [jsondecode(nested_statement.value.statement)] : []
                                   content {
                                     positional_constraint = byte_match_statement.value.positional_constraint
                                     search_string         = byte_match_statement.value.search_string
@@ -1742,10 +1742,10 @@ resource "aws_wafv2_web_acl" "default" {
                             }
                             dynamic "statement" {
                               iterator = nested_not_statement
-                              for_each = nested_statement.value.type.not_label_match_statement != null ? [1] : []
+                              for_each = nested_statement.value.type != null && nested_statement.value.type == "not_label_match_statement"  ? [1] : []
                               content {
                                 dynamic "label_match_statement" {
-                                  for_each = nested_not_statement.value.type == "not_label_match_statement" ? [jsondecode(nested_not_statement.value.statement)] : []
+                                  for_each = nested_statement.value.type == "not_label_match_statement" ? [jsondecode(nested_statement.value.statement)] : []
                                   content {
                                     scope = label_match_statement.value.scope
                                     key   = label_match_statement.value.key
@@ -1755,10 +1755,10 @@ resource "aws_wafv2_web_acl" "default" {
                             }
                             dynamic "statement" {
                               iterator = nested_not_statement
-                              for_each = nested_statement.value.type.not_regex_pattern_set_reference_statement != null ? [1] : []
+                              for_each = nested_statement.value.type != null && nested_statement.value.type == "not_regex_pattern_set_reference_statement"  ? [1] : []
                               content {
                                 dynamic "regex_pattern_set_reference_statement" {
-                                  for_each = nested_not_statement.value.type == "not_regex_pattern_set_reference_statement" ? [jsondecode(nested_not_statement.value.statement)] : []
+                                  for_each = nested_statement.value.type == "not_regex_pattern_set_reference_statement" ? [jsondecode(nested_statement.value.statement)] : []
                                   content {
                                     arn = regex_pattern_set_reference_statement.value.arn
 
@@ -2411,15 +2411,15 @@ resource "aws_wafv2_web_acl" "default" {
                           }
                         }
                         dynamic "not_statement" {
-                          for_each = nested_statement.value.type == "not_byte_match_statement" || nested_statement.value.type == "not_label_match_statement" || nested_statement.value.type == "not_regex_pattern_set_reference_statement" ? [jsondecode(nested_statement.value.statement)] : []
+                          for_each = nested_statement.value.type == "not_byte_match_statement" || nested_statement.value.type == "not_label_match_statement" || nested_statement.value.type == "not_regex_pattern_set_reference_statement" ? [1] : []
                           content {
                             dynamic "statement" {
                               iterator = nested_not_statement
-                              for_each = nested_statement.value.type.not_byte_match_statement != null ? [1] : []
+                              for_each = nested_statement.value.type != null && nested_statement.value.type == "not_byte_match_statement"  ? [1] : []
                               content {
 
                                 dynamic "byte_match_statement" {
-                                  for_each = nested_not_statement.value.type == "not_byte_match_statement" ? [jsondecode(nested_not_statement.value.statement)] : []
+                                  for_each = nested_statement.value.type == "not_byte_match_statement" ? [jsondecode(nested_statement.value.statement)] : []
                                   content {
                                     positional_constraint = byte_match_statement.value.positional_constraint
                                     search_string         = byte_match_statement.value.search_string
@@ -2489,10 +2489,10 @@ resource "aws_wafv2_web_acl" "default" {
                             }
                             dynamic "statement" {
                               iterator = nested_not_statement
-                              for_each = nested_statement.value.type.not_label_match_statement != null ? [1] : []
+                              for_each = nested_statement.value.type != null && nested_statement.value.type == "not_label_match_statement"  ? [1] : []
                               content {
                                 dynamic "label_match_statement" {
-                                  for_each = nested_not_statement.value.type == "not_label_match_statement" ? [jsondecode(nested_not_statement.value.statement)] : []
+                                  for_each = nested_statement.value.type == "not_label_match_statement" ? [jsondecode(nested_statement.value.statement)] : []
                                   content {
                                     scope = label_match_statement.value.scope
                                     key   = label_match_statement.value.key
@@ -2502,10 +2502,10 @@ resource "aws_wafv2_web_acl" "default" {
                             }
                             dynamic "statement" {
                               iterator = nested_not_statement
-                              for_each = nested_statement.value.type.not_regex_pattern_set_reference_statement != null ? [1] : []
+                              for_each = nested_statement.value.type != null && nested_statement.value.type == "not_regex_pattern_set_reference_statement"  ? [1] : []
                               content {
                                 dynamic "regex_pattern_set_reference_statement" {
-                                  for_each = nested_not_statement.value.type == "not_regex_pattern_set_reference_statement" ? [jsondecode(nested_not_statement.value.statement)] : []
+                                  for_each = nested_statement.value.type == "not_regex_pattern_set_reference_statement" ? [jsondecode(nested_statement.value.statement)] : []
                                   content {
                                     arn = regex_pattern_set_reference_statement.value.arn
 
@@ -2727,15 +2727,15 @@ resource "aws_wafv2_web_acl" "default" {
                           }
                         }
                         dynamic "not_statement" {
-                          for_each = nested_statement.value.type == "not_byte_match_statement" || nested_statement.value.type == "not_label_match_statement" || nested_statement.value.type == "not_regex_pattern_set_reference_statement" ? [jsondecode(nested_statement.value.statement)] : []
+                          for_each = nested_statement.value.type == "not_byte_match_statement" || nested_statement.value.type == "not_label_match_statement" || nested_statement.value.type == "not_regex_pattern_set_reference_statement" ? [1] : []
                           content {
                             dynamic "statement" {
                               iterator = nested_not_statement
-                              for_each = nested_statement.value.type.not_byte_match_statement != null ? [1] : []
+                              for_each = nested_statement.value.type != null && nested_statement.value.type == "not_byte_match_statement"  ? [1] : []
                               content {
 
                                 dynamic "byte_match_statement" {
-                                  for_each = nested_not_statement.value.type == "not_byte_match_statement" ? [jsondecode(nested_not_statement.value.statement)] : []
+                                  for_each = nested_statement.value.type == "not_byte_match_statement" ? [jsondecode(nested_statement.value.statement)] : []
                                   content {
                                     positional_constraint = byte_match_statement.value.positional_constraint
                                     search_string         = byte_match_statement.value.search_string
@@ -2805,10 +2805,10 @@ resource "aws_wafv2_web_acl" "default" {
                             }
                             dynamic "statement" {
                               iterator = nested_not_statement
-                              for_each = nested_statement.value.type.not_label_match_statement != null ? [1] : []
+                              for_each = nested_statement.value.type != null && nested_statement.value.type == "not_label_match_statement"  ? [1] : []
                               content {
                                 dynamic "label_match_statement" {
-                                  for_each = nested_not_statement.value.type == "not_label_match_statement" ? [jsondecode(nested_not_statement.value.statement)] : []
+                                  for_each = nested_statement.value.type == "not_label_match_statement" ? [jsondecode(nested_statement.value.statement)] : []
                                   content {
                                     scope = label_match_statement.value.scope
                                     key   = label_match_statement.value.key
@@ -2818,10 +2818,10 @@ resource "aws_wafv2_web_acl" "default" {
                             }
                             dynamic "statement" {
                               iterator = nested_not_statement
-                              for_each = nested_statement.value.type.not_regex_pattern_set_reference_statement != null ? [1] : []
+                              for_each = nested_statement.value.type != null && nested_statement.value.type == "not_regex_pattern_set_reference_statement"  ? [1] : []
                               content {
                                 dynamic "regex_pattern_set_reference_statement" {
-                                  for_each = nested_not_statement.value.type == "not_regex_pattern_set_reference_statement" ? [jsondecode(nested_not_statement.value.statement)] : []
+                                  for_each = nested_statement.value.type == "not_regex_pattern_set_reference_statement" ? [jsondecode(nested_statement.value.statement)] : []
                                   content {
                                     arn = regex_pattern_set_reference_statement.value.arn
 
@@ -3605,15 +3605,15 @@ resource "aws_wafv2_web_acl" "default" {
                           }
                         }
                         dynamic "not_statement" {
-                          for_each = nested_statement.value.type == "not_byte_match_statement" || nested_statement.value.type == "not_label_match_statement" || nested_statement.value.type == "not_regex_pattern_set_reference_statement" ? [jsondecode(nested_statement.value.statement)] : []
+                          for_each = nested_statement.value.type == "not_byte_match_statement" || nested_statement.value.type == "not_label_match_statement" || nested_statement.value.type == "not_regex_pattern_set_reference_statement" ? [1] : []
                           content {
                             dynamic "statement" {
                               iterator = nested_not_statement
-                              for_each = nested_statement.value.type.not_byte_match_statement != null ? [1] : []
+                              for_each = nested_statement.value.type != null && nested_statement.value.type == "not_byte_match_statement"  ? [1] : []
                               content {
 
                                 dynamic "byte_match_statement" {
-                                  for_each = nested_not_statement.value.type == "not_byte_match_statement" ? [jsondecode(nested_not_statement.value.statement)] : []
+                                  for_each = nested_statement.value.type == "not_byte_match_statement" ? [jsondecode(nested_statement.value.statement)] : []
                                   content {
                                     positional_constraint = byte_match_statement.value.positional_constraint
                                     search_string         = byte_match_statement.value.search_string
@@ -3683,10 +3683,10 @@ resource "aws_wafv2_web_acl" "default" {
                             }
                             dynamic "statement" {
                               iterator = nested_not_statement
-                              for_each = nested_statement.value.type.not_label_match_statement != null ? [1] : []
+                              for_each = nested_statement.value.type != null && nested_statement.value.type == "not_label_match_statement"  ? [1] : []
                               content {
                                 dynamic "label_match_statement" {
-                                  for_each = nested_not_statement.value.type == "not_label_match_statement" ? [jsondecode(nested_not_statement.value.statement)] : []
+                                  for_each = nested_statement.value.type == "not_label_match_statement" ? [jsondecode(nested_statement.value.statement)] : []
                                   content {
                                     scope = label_match_statement.value.scope
                                     key   = label_match_statement.value.key
@@ -3696,10 +3696,10 @@ resource "aws_wafv2_web_acl" "default" {
                             }
                             dynamic "statement" {
                               iterator = nested_not_statement
-                              for_each = nested_statement.value.type.not_regex_pattern_set_reference_statement != null ? [1] : []
+                              for_each = nested_statement.value.type != null && nested_statement.value.type == "not_regex_pattern_set_reference_statement"  ? [1] : []
                               content {
                                 dynamic "regex_pattern_set_reference_statement" {
-                                  for_each = nested_not_statement.value.type == "not_regex_pattern_set_reference_statement" ? [jsondecode(nested_not_statement.value.statement)] : []
+                                  for_each = nested_statement.value.type == "not_regex_pattern_set_reference_statement" ? [jsondecode(nested_statement.value.statement)] : []
                                   content {
                                     arn = regex_pattern_set_reference_statement.value.arn
 
@@ -3921,15 +3921,15 @@ resource "aws_wafv2_web_acl" "default" {
                           }
                         }
                         dynamic "not_statement" {
-                          for_each = nested_statement.value.type == "not_byte_match_statement" || nested_statement.value.type == "not_label_match_statement" || nested_statement.value.type == "not_regex_pattern_set_reference_statement" ? [jsondecode(nested_statement.value.statement)] : []
+                          for_each = nested_statement.value.type == "not_byte_match_statement" || nested_statement.value.type == "not_label_match_statement" || nested_statement.value.type == "not_regex_pattern_set_reference_statement" ? [1] : []
                           content {
                             dynamic "statement" {
                               iterator = nested_not_statement
-                              for_each = nested_statement.value.type.not_byte_match_statement != null ? [1] : []
+                              for_each = nested_statement.value.type != null && nested_statement.value.type == "not_byte_match_statement"  ? [1] : []
                               content {
 
                                 dynamic "byte_match_statement" {
-                                  for_each = nested_not_statement.value.type == "not_byte_match_statement" ? [jsondecode(nested_not_statement.value.statement)] : []
+                                  for_each = nested_statement.value.type == "not_byte_match_statement" ? [jsondecode(nested_statement.value.statement)] : []
                                   content {
                                     positional_constraint = byte_match_statement.value.positional_constraint
                                     search_string         = byte_match_statement.value.search_string
@@ -3999,10 +3999,10 @@ resource "aws_wafv2_web_acl" "default" {
                             }
                             dynamic "statement" {
                               iterator = nested_not_statement
-                              for_each = nested_statement.value.type.not_label_match_statement != null ? [1] : []
+                              for_each = nested_statement.value.type != null && nested_statement.value.type == "not_label_match_statement"  ? [1] : []
                               content {
                                 dynamic "label_match_statement" {
-                                  for_each = nested_not_statement.value.type == "not_label_match_statement" ? [jsondecode(nested_not_statement.value.statement)] : []
+                                  for_each = nested_statement.value.type == "not_label_match_statement" ? [jsondecode(nested_statement.value.statement)] : []
                                   content {
                                     scope = label_match_statement.value.scope
                                     key   = label_match_statement.value.key
@@ -4012,10 +4012,10 @@ resource "aws_wafv2_web_acl" "default" {
                             }
                             dynamic "statement" {
                               iterator = nested_not_statement
-                              for_each = nested_statement.value.type.not_regex_pattern_set_reference_statement != null ? [1] : []
+                              for_each = nested_statement.value.type != null && nested_statement.value.type == "not_regex_pattern_set_reference_statement"  ? [1] : []
                               content {
                                 dynamic "regex_pattern_set_reference_statement" {
-                                  for_each = nested_not_statement.value.type == "not_regex_pattern_set_reference_statement" ? [jsondecode(nested_not_statement.value.statement)] : []
+                                  for_each = nested_statement.value.type == "not_regex_pattern_set_reference_statement" ? [jsondecode(nested_statement.value.statement)] : []
                                   content {
                                     arn = regex_pattern_set_reference_statement.value.arn
 
@@ -4975,15 +4975,15 @@ resource "aws_wafv2_web_acl" "default" {
                           }
                         }
                         dynamic "not_statement" {
-                          for_each = nested_statement.value.type == "not_byte_match_statement" || nested_statement.value.type == "not_label_match_statement" || nested_statement.value.type == "not_regex_pattern_set_reference_statement" ? [jsondecode(nested_statement.value.statement)] : []
+                          for_each = nested_statement.value.type == "not_byte_match_statement" || nested_statement.value.type == "not_label_match_statement" || nested_statement.value.type == "not_regex_pattern_set_reference_statement" ? [1] : []
                           content {
                             dynamic "statement" {
                               iterator = nested_not_statement
-                              for_each = nested_statement.value.type.not_byte_match_statement != null ? [1] : []
+                              for_each = nested_statement.value.type != null && nested_statement.value.type == "not_byte_match_statement"  ? [1] : []
                               content {
 
                                 dynamic "byte_match_statement" {
-                                  for_each = nested_not_statement.value.type == "not_byte_match_statement" ? [jsondecode(nested_not_statement.value.statement)] : []
+                                  for_each = nested_statement.value.type == "not_byte_match_statement" ? [jsondecode(nested_statement.value.statement)] : []
                                   content {
                                     positional_constraint = byte_match_statement.value.positional_constraint
                                     search_string         = byte_match_statement.value.search_string
@@ -5053,10 +5053,10 @@ resource "aws_wafv2_web_acl" "default" {
                             }
                             dynamic "statement" {
                               iterator = nested_not_statement
-                              for_each = nested_statement.value.type.not_label_match_statement != null ? [1] : []
+                              for_each = nested_statement.value.type != null && nested_statement.value.type == "not_label_match_statement"  ? [1] : []
                               content {
                                 dynamic "label_match_statement" {
-                                  for_each = nested_not_statement.value.type == "not_label_match_statement" ? [jsondecode(nested_not_statement.value.statement)] : []
+                                  for_each = nested_statement.value.type == "not_label_match_statement" ? [jsondecode(nested_statement.value.statement)] : []
                                   content {
                                     scope = label_match_statement.value.scope
                                     key   = label_match_statement.value.key
@@ -5066,10 +5066,10 @@ resource "aws_wafv2_web_acl" "default" {
                             }
                             dynamic "statement" {
                               iterator = nested_not_statement
-                              for_each = nested_statement.value.type.not_regex_pattern_set_reference_statement != null ? [1] : []
+                              for_each = nested_statement.value.type != null && nested_statement.value.type == "not_regex_pattern_set_reference_statement"  ? [1] : []
                               content {
                                 dynamic "regex_pattern_set_reference_statement" {
-                                  for_each = nested_not_statement.value.type == "not_regex_pattern_set_reference_statement" ? [jsondecode(nested_not_statement.value.statement)] : []
+                                  for_each = nested_statement.value.type == "not_regex_pattern_set_reference_statement" ? [jsondecode(nested_statement.value.statement)] : []
                                   content {
                                     arn = regex_pattern_set_reference_statement.value.arn
 
@@ -5291,15 +5291,15 @@ resource "aws_wafv2_web_acl" "default" {
                           }
                         }
                         dynamic "not_statement" {
-                          for_each = nested_statement.value.type == "not_byte_match_statement" || nested_statement.value.type == "not_label_match_statement" || nested_statement.value.type == "not_regex_pattern_set_reference_statement" ? [jsondecode(nested_statement.value.statement)] : []
+                          for_each = nested_statement.value.type == "not_byte_match_statement" || nested_statement.value.type == "not_label_match_statement" || nested_statement.value.type == "not_regex_pattern_set_reference_statement" ? [1] : []
                           content {
                             dynamic "statement" {
                               iterator = nested_not_statement
-                              for_each = nested_statement.value.type.not_byte_match_statement != null ? [1] : []
+                              for_each = nested_statement.value.type != null && nested_statement.value.type == "not_byte_match_statement"  ? [1] : []
                               content {
 
                                 dynamic "byte_match_statement" {
-                                  for_each = nested_not_statement.value.type == "not_byte_match_statement" ? [jsondecode(nested_not_statement.value.statement)] : []
+                                  for_each = nested_statement.value.type == "not_byte_match_statement" ? [jsondecode(nested_statement.value.statement)] : []
                                   content {
                                     positional_constraint = byte_match_statement.value.positional_constraint
                                     search_string         = byte_match_statement.value.search_string
@@ -5369,10 +5369,10 @@ resource "aws_wafv2_web_acl" "default" {
                             }
                             dynamic "statement" {
                               iterator = nested_not_statement
-                              for_each = nested_statement.value.type.not_label_match_statement != null ? [1] : []
+                              for_each = nested_statement.value.type != null && nested_statement.value.type == "not_label_match_statement"  ? [1] : []
                               content {
                                 dynamic "label_match_statement" {
-                                  for_each = nested_not_statement.value.type == "not_label_match_statement" ? [jsondecode(nested_not_statement.value.statement)] : []
+                                  for_each = nested_statement.value.type == "not_label_match_statement" ? [jsondecode(nested_statement.value.statement)] : []
                                   content {
                                     scope = label_match_statement.value.scope
                                     key   = label_match_statement.value.key
@@ -5382,10 +5382,10 @@ resource "aws_wafv2_web_acl" "default" {
                             }
                             dynamic "statement" {
                               iterator = nested_not_statement
-                              for_each = nested_statement.value.type.not_regex_pattern_set_reference_statement != null ? [1] : []
+                              for_each = nested_statement.value.type != null && nested_statement.value.type == "not_regex_pattern_set_reference_statement"  ? [1] : []
                               content {
                                 dynamic "regex_pattern_set_reference_statement" {
-                                  for_each = nested_not_statement.value.type == "not_regex_pattern_set_reference_statement" ? [jsondecode(nested_not_statement.value.statement)] : []
+                                  for_each = nested_statement.value.type == "not_regex_pattern_set_reference_statement" ? [jsondecode(nested_statement.value.statement)] : []
                                   content {
                                     arn = regex_pattern_set_reference_statement.value.arn
 

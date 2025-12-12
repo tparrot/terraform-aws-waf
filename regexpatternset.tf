@@ -24,10 +24,10 @@ module "regex_pattern_set_label" {
 resource "aws_wafv2_regex_pattern_set" "default" {
   for_each = local.regex_pattern_sets
 
-  name               = module.regex_pattern_set_label[each.key].id
-  description        = lookup(each.value, "description", null)
-  scope              = var.scope
-  
+  name        = module.regex_pattern_set_label[each.key].id
+  description = lookup(each.value, "description", null)
+  scope       = var.scope
+
   dynamic "regular_expression" {
     for_each = each.value.regexes
     content {

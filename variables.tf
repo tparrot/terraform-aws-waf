@@ -428,6 +428,8 @@ variable "managed_rule_group_statement_rules" {
             body                  = optional(bool)
             method                = optional(bool)
             query_string          = optional(bool)
+            ja3_fingerprint       = optional(object({ fallback_behavior = string }))
+            ja4_fingerprint       = optional(object({ fallback_behavior = string }))
             single_header         = optional(object({ name = string }))
             single_query_argument = optional(object({ name = string }))
             uri_path              = optional(bool)
@@ -442,12 +444,15 @@ variable "managed_rule_group_statement_rules" {
           scope = string
         }), null)
         regex_pattern_set_reference_statement = optional(object({
-          arn = string
+          arn      = optional(string)
+          set_name = optional(string)
           field_to_match = object({
             all_query_arguments   = optional(bool)
             body                  = optional(bool)
             method                = optional(bool)
             query_string          = optional(bool)
+            ja3_fingerprint       = optional(object({ fallback_behavior = string }))
+            ja4_fingerprint       = optional(object({ fallback_behavior = string }))
             single_header         = optional(object({ name = string }))
             single_query_argument = optional(object({ name = string }))
             uri_path              = optional(bool)
@@ -465,6 +470,8 @@ variable "managed_rule_group_statement_rules" {
             body                  = optional(bool)
             method                = optional(bool)
             query_string          = optional(bool)
+            ja3_fingerprint       = optional(object({ fallback_behavior = string }))
+            ja4_fingerprint       = optional(object({ fallback_behavior = string }))
             single_header         = optional(object({ name = string }))
             single_query_argument = optional(object({ name = string }))
             uri_path              = optional(bool)
@@ -479,12 +486,15 @@ variable "managed_rule_group_statement_rules" {
           scope = string
         }), null)
         not_regex_pattern_set_reference_statement = optional(object({
-          arn = string
+          arn      = optional(string)
+          set_name = optional(string)
           field_to_match = object({
             all_query_arguments   = optional(bool)
             body                  = optional(bool)
             method                = optional(bool)
             query_string          = optional(bool)
+            ja3_fingerprint       = optional(object({ fallback_behavior = string }))
+            ja4_fingerprint       = optional(object({ fallback_behavior = string }))
             single_header         = optional(object({ name = string }))
             single_query_argument = optional(object({ name = string }))
             uri_path              = optional(bool)
@@ -727,6 +737,8 @@ variable "rate_based_statement_rules" {
             body                  = optional(bool)
             method                = optional(bool)
             query_string          = optional(bool)
+            ja3_fingerprint       = optional(object({ fallback_behavior = string }))
+            ja4_fingerprint       = optional(object({ fallback_behavior = string }))
             single_header         = optional(object({ name = string }))
             single_query_argument = optional(object({ name = string }))
             uri_path              = optional(bool)
@@ -741,12 +753,16 @@ variable "rate_based_statement_rules" {
           scope = string
         }), null)
         regex_pattern_set_reference_statement = optional(object({
-          arn = string
+          arn      = optional(string)
+          set_name = optional(string)
+
           field_to_match = object({
             all_query_arguments   = optional(bool)
             body                  = optional(bool)
             method                = optional(bool)
             query_string          = optional(bool)
+            ja3_fingerprint       = optional(object({ fallback_behavior = string }))
+            ja4_fingerprint       = optional(object({ fallback_behavior = string }))
             single_header         = optional(object({ name = string }))
             single_query_argument = optional(object({ name = string }))
             uri_path              = optional(bool)
@@ -764,6 +780,8 @@ variable "rate_based_statement_rules" {
             body                  = optional(bool)
             method                = optional(bool)
             query_string          = optional(bool)
+            ja3_fingerprint       = optional(object({ fallback_behavior = string }))
+            ja4_fingerprint       = optional(object({ fallback_behavior = string }))
             single_header         = optional(object({ name = string }))
             single_query_argument = optional(object({ name = string }))
             uri_path              = optional(bool)
@@ -778,12 +796,15 @@ variable "rate_based_statement_rules" {
           scope = string
         }), null)
         not_regex_pattern_set_reference_statement = optional(object({
-          arn = string
+          arn      = optional(string)
+          set_name = optional(string)
           field_to_match = object({
             all_query_arguments   = optional(bool)
             body                  = optional(bool)
             method                = optional(bool)
             query_string          = optional(bool)
+            ja3_fingerprint       = optional(object({ fallback_behavior = string }))
+            ja4_fingerprint       = optional(object({ fallback_behavior = string }))
             single_header         = optional(object({ name = string }))
             single_query_argument = optional(object({ name = string }))
             uri_path              = optional(bool)
@@ -890,6 +911,28 @@ variable "rate_based_statement_rules" {
   DOC
 }
 
+variable "reusable_regex_pattern_sets" {
+  type = list(object({
+    name = string
+    regex_pattern_set = object({
+      regexes = list(string)
+    })
+  }))
+  default     = null
+  description = <<-DOC
+    An additional regex pattern set that can be included within a rule 
+
+    name:
+      A friendly name of the regex pattern set.
+
+    regex_pattern_set:
+      Defines a new Regex Pattern Set
+      description:
+        A friendly description of the Regex Pattern Set
+      regexes:
+        Contains an array of strings that resemble regex patterns
+  DOC
+}
 
 variable "regex_pattern_set_reference_statement_rules" {
   type = list(object({
@@ -997,6 +1040,8 @@ variable "regex_match_statement_rules" {
             body                  = optional(bool)
             method                = optional(bool)
             query_string          = optional(bool)
+            ja3_fingerprint       = optional(object({ fallback_behavior = string }))
+            ja4_fingerprint       = optional(object({ fallback_behavior = string }))
             single_header         = optional(object({ name = string }))
             single_query_argument = optional(object({ name = string }))
             uri_path              = optional(bool)
@@ -1011,12 +1056,15 @@ variable "regex_match_statement_rules" {
           scope = string
         }), null)
         regex_pattern_set_reference_statement = optional(object({
-          arn = string
+          arn      = optional(string)
+          set_name = optional(string)
           field_to_match = object({
             all_query_arguments   = optional(bool)
             body                  = optional(bool)
             method                = optional(bool)
             query_string          = optional(bool)
+            ja3_fingerprint       = optional(object({ fallback_behavior = string }))
+            ja4_fingerprint       = optional(object({ fallback_behavior = string }))
             single_header         = optional(object({ name = string }))
             single_query_argument = optional(object({ name = string }))
             uri_path              = optional(bool)
@@ -1034,6 +1082,8 @@ variable "regex_match_statement_rules" {
             body                  = optional(bool)
             method                = optional(bool)
             query_string          = optional(bool)
+            ja3_fingerprint       = optional(object({ fallback_behavior = string }))
+            ja4_fingerprint       = optional(object({ fallback_behavior = string }))
             single_header         = optional(object({ name = string }))
             single_query_argument = optional(object({ name = string }))
             uri_path              = optional(bool)
@@ -1048,12 +1098,15 @@ variable "regex_match_statement_rules" {
           scope = string
         }), null)
         not_regex_pattern_set_reference_statement = optional(object({
-          arn = string
+          arn      = optional(string)
+          set_name = optional(string)
           field_to_match = object({
             all_query_arguments   = optional(bool)
             body                  = optional(bool)
             method                = optional(bool)
             query_string          = optional(bool)
+            ja3_fingerprint       = optional(object({ fallback_behavior = string }))
+            ja4_fingerprint       = optional(object({ fallback_behavior = string }))
             single_header         = optional(object({ name = string }))
             single_query_argument = optional(object({ name = string }))
             uri_path              = optional(bool)
@@ -1343,6 +1396,8 @@ variable "sqli_match_statement_rules" {
             body                  = optional(bool)
             method                = optional(bool)
             query_string          = optional(bool)
+            ja3_fingerprint       = optional(object({ fallback_behavior = string }))
+            ja4_fingerprint       = optional(object({ fallback_behavior = string }))
             single_header         = optional(object({ name = string }))
             single_query_argument = optional(object({ name = string }))
             uri_path              = optional(bool)
@@ -1357,12 +1412,15 @@ variable "sqli_match_statement_rules" {
           scope = string
         }), null)
         regex_pattern_set_reference_statement = optional(object({
-          arn = string
+          arn      = optional(string)
+          set_name = optional(string)
           field_to_match = object({
             all_query_arguments   = optional(bool)
             body                  = optional(bool)
             method                = optional(bool)
             query_string          = optional(bool)
+            ja3_fingerprint       = optional(object({ fallback_behavior = string }))
+            ja4_fingerprint       = optional(object({ fallback_behavior = string }))
             single_header         = optional(object({ name = string }))
             single_query_argument = optional(object({ name = string }))
             uri_path              = optional(bool)
@@ -1380,6 +1438,8 @@ variable "sqli_match_statement_rules" {
             body                  = optional(bool)
             method                = optional(bool)
             query_string          = optional(bool)
+            ja3_fingerprint       = optional(object({ fallback_behavior = string }))
+            ja4_fingerprint       = optional(object({ fallback_behavior = string }))
             single_header         = optional(object({ name = string }))
             single_query_argument = optional(object({ name = string }))
             uri_path              = optional(bool)
@@ -1394,12 +1454,15 @@ variable "sqli_match_statement_rules" {
           scope = string
         }), null)
         not_regex_pattern_set_reference_statement = optional(object({
-          arn = string
+          arn      = optional(string)
+          set_name = optional(string)
           field_to_match = object({
             all_query_arguments   = optional(bool)
             body                  = optional(bool)
             method                = optional(bool)
             query_string          = optional(bool)
+            ja3_fingerprint       = optional(object({ fallback_behavior = string }))
+            ja4_fingerprint       = optional(object({ fallback_behavior = string }))
             single_header         = optional(object({ name = string }))
             single_query_argument = optional(object({ name = string }))
             uri_path              = optional(bool)

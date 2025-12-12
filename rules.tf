@@ -252,6 +252,22 @@ resource "aws_wafv2_web_acl" "default" {
                   content {}
                 }
 
+                dynamic "ja3_fingerprint" {
+                  for_each = lookup(field_to_match.value, "ja3_fingerprint", null) != null ? [field_to_match.value.ja3_fingerprint] : []
+
+                  content {
+                    fallback_behavior = ja3_fingerprint.value.fallback_behavior
+                  }
+                }
+
+                dynamic "ja4_fingerprint" {
+                  for_each = lookup(field_to_match.value, "ja4_fingerprint", null) != null ? [field_to_match.value.ja4_fingerprint] : []
+
+                  content {
+                    fallback_behavior = ja4_fingerprint.value.fallback_behavior
+                  }
+                }
+
                 dynamic "single_header" {
                   for_each = lookup(field_to_match.value, "single_header", null) != null ? [field_to_match.value.single_header] : []
 
@@ -900,7 +916,7 @@ resource "aws_wafv2_web_acl" "default" {
                 dynamic "regex_pattern_set_reference_statement" {
                   for_each = scope_down_statement.value.regex_pattern_set_reference_statement != null ? [scope_down_statement.value.regex_pattern_set_reference_statement] : []
                   content {
-                    arn = regex_pattern_set_reference_statement.value.arn
+                    arn = try(aws_wafv2_regex_pattern_set.default[local.regex_rule_to_reusable_regex_pattern_set[regex_pattern_set_reference_statement.value.set_name]], null) != null ? aws_wafv2_regex_pattern_set.default[local.regex_rule_to_reusable_regex_pattern_set[regex_pattern_set_reference_statement.value.set_name]].arn : (try(aws_wafv2_regex_pattern_set.default[local.regex_rule_to_regex_pattern_set[rule.key]], null) != null ? aws_wafv2_regex_pattern_set.default[local.regex_rule_to_regex_pattern_set[rule.key]].arn : try(regex_pattern_set_reference_statement.value.arnement.value.arn, null))
 
                     dynamic "field_to_match" {
                       for_each = regex_pattern_set_reference_statement.value.field_to_match != null ? [regex_pattern_set_reference_statement.value.field_to_match] : []
@@ -927,6 +943,22 @@ resource "aws_wafv2_web_acl" "default" {
                           for_each = lookup(field_to_match.value, "query_string", null) != null ? [1] : []
 
                           content {}
+                        }
+
+                        dynamic "ja3_fingerprint" {
+                          for_each = lookup(field_to_match.value, "ja3_fingerprint", null) != null ? [field_to_match.value.ja3_fingerprint] : []
+
+                          content {
+                            fallback_behavior = ja3_fingerprint.value.fallback_behavior
+                          }
+                        }
+
+                        dynamic "ja4_fingerprint" {
+                          for_each = lookup(field_to_match.value, "ja4_fingerprint", null) != null ? [field_to_match.value.ja4_fingerprint] : []
+
+                          content {
+                            fallback_behavior = ja4_fingerprint.value.fallback_behavior
+                          }
                         }
 
                         dynamic "single_header" {
@@ -1004,6 +1036,22 @@ resource "aws_wafv2_web_acl" "default" {
                           content {}
                         }
 
+                        dynamic "ja3_fingerprint" {
+                          for_each = lookup(field_to_match.value, "ja3_fingerprint", null) != null ? [field_to_match.value.ja3_fingerprint] : []
+
+                          content {
+                            fallback_behavior = ja3_fingerprint.value.fallback_behavior
+                          }
+                        }
+
+                        dynamic "ja4_fingerprint" {
+                          for_each = lookup(field_to_match.value, "ja4_fingerprint", null) != null ? [field_to_match.value.ja4_fingerprint] : []
+
+                          content {
+                            fallback_behavior = ja4_fingerprint.value.fallback_behavior
+                          }
+                        }
+
                         dynamic "single_header" {
                           for_each = lookup(field_to_match.value, "single_header", null) != null ? [field_to_match.value.single_header] : []
 
@@ -1077,6 +1125,22 @@ resource "aws_wafv2_web_acl" "default" {
                                   content {}
                                 }
 
+                                dynamic "ja3_fingerprint" {
+                                  for_each = lookup(field_to_match.value, "ja3_fingerprint", null) != null ? [field_to_match.value.ja3_fingerprint] : []
+
+                                  content {
+                                    fallback_behavior = ja3_fingerprint.value.fallback_behavior
+                                  }
+                                }
+
+                                dynamic "ja4_fingerprint" {
+                                  for_each = lookup(field_to_match.value, "ja4_fingerprint", null) != null ? [field_to_match.value.ja4_fingerprint] : []
+
+                                  content {
+                                    fallback_behavior = ja4_fingerprint.value.fallback_behavior
+                                  }
+                                }
+
                                 dynamic "single_header" {
                                   for_each = lookup(field_to_match.value, "single_header", null) != null ? [field_to_match.value.single_header] : []
 
@@ -1131,7 +1195,7 @@ resource "aws_wafv2_web_acl" "default" {
                         dynamic "regex_pattern_set_reference_statement" {
                           for_each = statement.value.not_regex_pattern_set_reference_statement != null ? [statement.value.not_regex_pattern_set_reference_statement] : []
                           content {
-                            arn = regex_pattern_set_reference_statement.value.arn
+                            arn = try(aws_wafv2_regex_pattern_set.default[local.regex_rule_to_reusable_regex_pattern_set[regex_pattern_set_reference_statement.value.set_name]], null) != null ? aws_wafv2_regex_pattern_set.default[local.regex_rule_to_reusable_regex_pattern_set[regex_pattern_set_reference_statement.value.set_name]].arn : (try(aws_wafv2_regex_pattern_set.default[local.regex_rule_to_regex_pattern_set[rule.key]], null) != null ? aws_wafv2_regex_pattern_set.default[local.regex_rule_to_regex_pattern_set[rule.key]].arn : try(regex_pattern_set_reference_statement.value.arnement.value.arn, null))
 
                             dynamic "field_to_match" {
                               for_each = regex_pattern_set_reference_statement.value.field_to_match != null ? [regex_pattern_set_reference_statement.value.field_to_match] : []
@@ -1158,6 +1222,22 @@ resource "aws_wafv2_web_acl" "default" {
                                   for_each = lookup(field_to_match.value, "query_string", null) != null ? [1] : []
 
                                   content {}
+                                }
+
+                                dynamic "ja3_fingerprint" {
+                                  for_each = lookup(field_to_match.value, "ja3_fingerprint", null) != null ? [field_to_match.value.ja3_fingerprint] : []
+
+                                  content {
+                                    fallback_behavior = ja3_fingerprint.value.fallback_behavior
+                                  }
+                                }
+
+                                dynamic "ja4_fingerprint" {
+                                  for_each = lookup(field_to_match.value, "ja4_fingerprint", null) != null ? [field_to_match.value.ja4_fingerprint] : []
+
+                                  content {
+                                    fallback_behavior = ja4_fingerprint.value.fallback_behavior
+                                  }
                                 }
 
                                 dynamic "single_header" {
@@ -1240,6 +1320,38 @@ resource "aws_wafv2_web_acl" "default" {
                                   content {}
                                 }
 
+                                dynamic "ja3_fingerprint" {
+                                  for_each = lookup(field_to_match.value, "ja3_fingerprint", null) != null ? [field_to_match.value.ja3_fingerprint] : []
+
+                                  content {
+                                    fallback_behavior = ja3_fingerprint.value.fallback_behavior
+                                  }
+                                }
+
+                                dynamic "ja4_fingerprint" {
+                                  for_each = lookup(field_to_match.value, "ja4_fingerprint", null) != null ? [field_to_match.value.ja4_fingerprint] : []
+
+                                  content {
+                                    fallback_behavior = ja4_fingerprint.value.fallback_behavior
+                                  }
+                                }
+
+                                dynamic "ja3_fingerprint" {
+                                  for_each = lookup(field_to_match.value, "ja3_fingerprint", null) != null ? [field_to_match.value.ja3_fingerprint] : []
+
+                                  content {
+                                    fallback_behavior = ja3_fingerprint.value.fallback_behavior
+                                  }
+                                }
+
+                                dynamic "ja4_fingerprint" {
+                                  for_each = lookup(field_to_match.value, "ja4_fingerprint", null) != null ? [field_to_match.value.ja4_fingerprint] : []
+
+                                  content {
+                                    fallback_behavior = ja4_fingerprint.value.fallback_behavior
+                                  }
+                                }
+
                                 dynamic "single_header" {
                                   for_each = lookup(field_to_match.value, "single_header", null) != null ? [field_to_match.value.single_header] : []
 
@@ -1277,7 +1389,7 @@ resource "aws_wafv2_web_acl" "default" {
                         dynamic "regex_pattern_set_reference_statement" {
                           for_each = nested_statement.value.type == "regex_pattern_set_reference_statement" ? [jsondecode(nested_statement.value.statement)] : []
                           content {
-                            arn = regex_pattern_set_reference_statement.value.arn
+                            arn = try(aws_wafv2_regex_pattern_set.default[local.regex_rule_to_reusable_regex_pattern_set[regex_pattern_set_reference_statement.value.set_name]], null) != null ? aws_wafv2_regex_pattern_set.default[local.regex_rule_to_reusable_regex_pattern_set[regex_pattern_set_reference_statement.value.set_name]].arn : (try(aws_wafv2_regex_pattern_set.default[local.regex_rule_to_regex_pattern_set[rule.key]], null) != null ? aws_wafv2_regex_pattern_set.default[local.regex_rule_to_regex_pattern_set[rule.key]].arn : try(regex_pattern_set_reference_statement.value.arnement.value.arn, null))
 
                             dynamic "field_to_match" {
                               for_each = regex_pattern_set_reference_statement.value.field_to_match != null ? [regex_pattern_set_reference_statement.value.field_to_match] : []
@@ -1304,6 +1416,22 @@ resource "aws_wafv2_web_acl" "default" {
                                   for_each = lookup(field_to_match.value, "query_string", null) != null ? [1] : []
 
                                   content {}
+                                }
+
+                                dynamic "ja3_fingerprint" {
+                                  for_each = lookup(field_to_match.value, "ja3_fingerprint", null) != null ? [field_to_match.value.ja3_fingerprint] : []
+
+                                  content {
+                                    fallback_behavior = ja3_fingerprint.value.fallback_behavior
+                                  }
+                                }
+
+                                dynamic "ja4_fingerprint" {
+                                  for_each = lookup(field_to_match.value, "ja4_fingerprint", null) != null ? [field_to_match.value.ja4_fingerprint] : []
+
+                                  content {
+                                    fallback_behavior = ja4_fingerprint.value.fallback_behavior
+                                  }
                                 }
 
                                 dynamic "single_header" {
@@ -1352,7 +1480,7 @@ resource "aws_wafv2_web_acl" "default" {
                           content {
                             dynamic "statement" {
                               iterator = nested_not_statement
-                              for_each = nested_statement.value.type != null && nested_statement.value.type == "not_byte_match_statement"  ? [1] : []
+                              for_each = nested_statement.value.type != null && nested_statement.value.type == "not_byte_match_statement" ? [1] : []
                               content {
 
                                 dynamic "byte_match_statement" {
@@ -1386,6 +1514,22 @@ resource "aws_wafv2_web_acl" "default" {
                                           for_each = lookup(field_to_match.value, "query_string", null) != null ? [1] : []
 
                                           content {}
+                                        }
+
+                                        dynamic "ja3_fingerprint" {
+                                          for_each = lookup(field_to_match.value, "ja3_fingerprint", null) != null ? [field_to_match.value.ja3_fingerprint] : []
+
+                                          content {
+                                            fallback_behavior = ja3_fingerprint.value.fallback_behavior
+                                          }
+                                        }
+
+                                        dynamic "ja4_fingerprint" {
+                                          for_each = lookup(field_to_match.value, "ja4_fingerprint", null) != null ? [field_to_match.value.ja4_fingerprint] : []
+
+                                          content {
+                                            fallback_behavior = ja4_fingerprint.value.fallback_behavior
+                                          }
                                         }
 
                                         dynamic "single_header" {
@@ -1426,7 +1570,7 @@ resource "aws_wafv2_web_acl" "default" {
                             }
                             dynamic "statement" {
                               iterator = nested_not_statement
-                              for_each = nested_statement.value.type != null && nested_statement.value.type == "not_label_match_statement"  ? [1] : []
+                              for_each = nested_statement.value.type != null && nested_statement.value.type == "not_label_match_statement" ? [1] : []
                               content {
                                 dynamic "label_match_statement" {
                                   for_each = nested_statement.value.type == "not_label_match_statement" ? [jsondecode(nested_statement.value.statement)] : []
@@ -1439,12 +1583,12 @@ resource "aws_wafv2_web_acl" "default" {
                             }
                             dynamic "statement" {
                               iterator = nested_not_statement
-                              for_each = nested_statement.value.type != null && nested_statement.value.type == "not_regex_pattern_set_reference_statement"  ? [1] : []
+                              for_each = nested_statement.value.type != null && nested_statement.value.type == "not_regex_pattern_set_reference_statement" ? [1] : []
                               content {
                                 dynamic "regex_pattern_set_reference_statement" {
                                   for_each = nested_statement.value.type == "not_regex_pattern_set_reference_statement" ? [jsondecode(nested_statement.value.statement)] : []
                                   content {
-                                    arn = regex_pattern_set_reference_statement.value.arn
+                                    arn = try(aws_wafv2_regex_pattern_set.default[local.regex_rule_to_reusable_regex_pattern_set[regex_pattern_set_reference_statement.value.set_name]], null) != null ? aws_wafv2_regex_pattern_set.default[local.regex_rule_to_reusable_regex_pattern_set[regex_pattern_set_reference_statement.value.set_name]].arn : (try(aws_wafv2_regex_pattern_set.default[local.regex_rule_to_regex_pattern_set[rule.key]], null) != null ? aws_wafv2_regex_pattern_set.default[local.regex_rule_to_regex_pattern_set[rule.key]].arn : try(regex_pattern_set_reference_statement.value.arnement.value.arn, null))
 
                                     dynamic "field_to_match" {
                                       for_each = regex_pattern_set_reference_statement.value.field_to_match != null ? [regex_pattern_set_reference_statement.value.field_to_match] : []
@@ -1471,6 +1615,22 @@ resource "aws_wafv2_web_acl" "default" {
                                           for_each = lookup(field_to_match.value, "query_string", null) != null ? [1] : []
 
                                           content {}
+                                        }
+
+                                        dynamic "ja3_fingerprint" {
+                                          for_each = lookup(field_to_match.value, "ja3_fingerprint", null) != null ? [field_to_match.value.ja3_fingerprint] : []
+
+                                          content {
+                                            fallback_behavior = ja3_fingerprint.value.fallback_behavior
+                                          }
+                                        }
+
+                                        dynamic "ja4_fingerprint" {
+                                          for_each = lookup(field_to_match.value, "ja4_fingerprint", null) != null ? [field_to_match.value.ja4_fingerprint] : []
+
+                                          content {
+                                            fallback_behavior = ja4_fingerprint.value.fallback_behavior
+                                          }
                                         }
 
                                         dynamic "single_header" {
@@ -1556,6 +1716,22 @@ resource "aws_wafv2_web_acl" "default" {
                                   content {}
                                 }
 
+                                dynamic "ja3_fingerprint" {
+                                  for_each = lookup(field_to_match.value, "ja3_fingerprint", null) != null ? [field_to_match.value.ja3_fingerprint] : []
+
+                                  content {
+                                    fallback_behavior = ja3_fingerprint.value.fallback_behavior
+                                  }
+                                }
+
+                                dynamic "ja4_fingerprint" {
+                                  for_each = lookup(field_to_match.value, "ja4_fingerprint", null) != null ? [field_to_match.value.ja4_fingerprint] : []
+
+                                  content {
+                                    fallback_behavior = ja4_fingerprint.value.fallback_behavior
+                                  }
+                                }
+
                                 dynamic "single_header" {
                                   for_each = lookup(field_to_match.value, "single_header", null) != null ? [field_to_match.value.single_header] : []
 
@@ -1593,7 +1769,7 @@ resource "aws_wafv2_web_acl" "default" {
                         dynamic "regex_pattern_set_reference_statement" {
                           for_each = nested_statement.value.type == "regex_pattern_set_reference_statement" ? [jsondecode(nested_statement.value.statement)] : []
                           content {
-                            arn = regex_pattern_set_reference_statement.value.arn
+                            arn = try(aws_wafv2_regex_pattern_set.default[local.regex_rule_to_reusable_regex_pattern_set[regex_pattern_set_reference_statement.value.set_name]], null) != null ? aws_wafv2_regex_pattern_set.default[local.regex_rule_to_reusable_regex_pattern_set[regex_pattern_set_reference_statement.value.set_name]].arn : (try(aws_wafv2_regex_pattern_set.default[local.regex_rule_to_regex_pattern_set[rule.key]], null) != null ? aws_wafv2_regex_pattern_set.default[local.regex_rule_to_regex_pattern_set[rule.key]].arn : try(regex_pattern_set_reference_statement.value.arnement.value.arn, null))
 
                             dynamic "field_to_match" {
                               for_each = regex_pattern_set_reference_statement.value.field_to_match != null ? [regex_pattern_set_reference_statement.value.field_to_match] : []
@@ -1620,6 +1796,22 @@ resource "aws_wafv2_web_acl" "default" {
                                   for_each = lookup(field_to_match.value, "query_string", null) != null ? [1] : []
 
                                   content {}
+                                }
+
+                                dynamic "ja3_fingerprint" {
+                                  for_each = lookup(field_to_match.value, "ja3_fingerprint", null) != null ? [field_to_match.value.ja3_fingerprint] : []
+
+                                  content {
+                                    fallback_behavior = ja3_fingerprint.value.fallback_behavior
+                                  }
+                                }
+
+                                dynamic "ja4_fingerprint" {
+                                  for_each = lookup(field_to_match.value, "ja4_fingerprint", null) != null ? [field_to_match.value.ja4_fingerprint] : []
+
+                                  content {
+                                    fallback_behavior = ja4_fingerprint.value.fallback_behavior
+                                  }
                                 }
 
                                 dynamic "single_header" {
@@ -1668,7 +1860,7 @@ resource "aws_wafv2_web_acl" "default" {
                           content {
                             dynamic "statement" {
                               iterator = nested_not_statement
-                              for_each = nested_statement.value.type != null && nested_statement.value.type == "not_byte_match_statement"  ? [1] : []
+                              for_each = nested_statement.value.type != null && nested_statement.value.type == "not_byte_match_statement" ? [1] : []
                               content {
 
                                 dynamic "byte_match_statement" {
@@ -1702,6 +1894,22 @@ resource "aws_wafv2_web_acl" "default" {
                                           for_each = lookup(field_to_match.value, "query_string", null) != null ? [1] : []
 
                                           content {}
+                                        }
+
+                                        dynamic "ja3_fingerprint" {
+                                          for_each = lookup(field_to_match.value, "ja3_fingerprint", null) != null ? [field_to_match.value.ja3_fingerprint] : []
+
+                                          content {
+                                            fallback_behavior = ja3_fingerprint.value.fallback_behavior
+                                          }
+                                        }
+
+                                        dynamic "ja4_fingerprint" {
+                                          for_each = lookup(field_to_match.value, "ja4_fingerprint", null) != null ? [field_to_match.value.ja4_fingerprint] : []
+
+                                          content {
+                                            fallback_behavior = ja4_fingerprint.value.fallback_behavior
+                                          }
                                         }
 
                                         dynamic "single_header" {
@@ -1742,7 +1950,7 @@ resource "aws_wafv2_web_acl" "default" {
                             }
                             dynamic "statement" {
                               iterator = nested_not_statement
-                              for_each = nested_statement.value.type != null && nested_statement.value.type == "not_label_match_statement"  ? [1] : []
+                              for_each = nested_statement.value.type != null && nested_statement.value.type == "not_label_match_statement" ? [1] : []
                               content {
                                 dynamic "label_match_statement" {
                                   for_each = nested_statement.value.type == "not_label_match_statement" ? [jsondecode(nested_statement.value.statement)] : []
@@ -1755,12 +1963,12 @@ resource "aws_wafv2_web_acl" "default" {
                             }
                             dynamic "statement" {
                               iterator = nested_not_statement
-                              for_each = nested_statement.value.type != null && nested_statement.value.type == "not_regex_pattern_set_reference_statement"  ? [1] : []
+                              for_each = nested_statement.value.type != null && nested_statement.value.type == "not_regex_pattern_set_reference_statement" ? [1] : []
                               content {
                                 dynamic "regex_pattern_set_reference_statement" {
                                   for_each = nested_statement.value.type == "not_regex_pattern_set_reference_statement" ? [jsondecode(nested_statement.value.statement)] : []
                                   content {
-                                    arn = regex_pattern_set_reference_statement.value.arn
+                                    arn = try(aws_wafv2_regex_pattern_set.default[local.regex_rule_to_reusable_regex_pattern_set[regex_pattern_set_reference_statement.value.set_name]], null) != null ? aws_wafv2_regex_pattern_set.default[local.regex_rule_to_reusable_regex_pattern_set[regex_pattern_set_reference_statement.value.set_name]].arn : (try(aws_wafv2_regex_pattern_set.default[local.regex_rule_to_regex_pattern_set[rule.key]], null) != null ? aws_wafv2_regex_pattern_set.default[local.regex_rule_to_regex_pattern_set[rule.key]].arn : try(regex_pattern_set_reference_statement.value.arnement.value.arn, null))
 
                                     dynamic "field_to_match" {
                                       for_each = regex_pattern_set_reference_statement.value.field_to_match != null ? [regex_pattern_set_reference_statement.value.field_to_match] : []
@@ -1787,6 +1995,22 @@ resource "aws_wafv2_web_acl" "default" {
                                           for_each = lookup(field_to_match.value, "query_string", null) != null ? [1] : []
 
                                           content {}
+                                        }
+
+                                        dynamic "ja3_fingerprint" {
+                                          for_each = lookup(field_to_match.value, "ja3_fingerprint", null) != null ? [field_to_match.value.ja3_fingerprint] : []
+
+                                          content {
+                                            fallback_behavior = ja3_fingerprint.value.fallback_behavior
+                                          }
+                                        }
+
+                                        dynamic "ja4_fingerprint" {
+                                          for_each = lookup(field_to_match.value, "ja4_fingerprint", null) != null ? [field_to_match.value.ja4_fingerprint] : []
+
+                                          content {
+                                            fallback_behavior = ja4_fingerprint.value.fallback_behavior
+                                          }
                                         }
 
                                         dynamic "single_header" {
@@ -1963,7 +2187,7 @@ resource "aws_wafv2_web_acl" "default" {
                 dynamic "regex_pattern_set_reference_statement" {
                   for_each = scope_down_statement.value.regex_pattern_set_reference_statement != null ? [scope_down_statement.value.regex_pattern_set_reference_statement] : []
                   content {
-                    arn = regex_pattern_set_reference_statement.value.arn
+                    arn = try(aws_wafv2_regex_pattern_set.default[local.regex_rule_to_reusable_regex_pattern_set[regex_pattern_set_reference_statement.value.set_name]], null) != null ? aws_wafv2_regex_pattern_set.default[local.regex_rule_to_reusable_regex_pattern_set[regex_pattern_set_reference_statement.value.set_name]].arn : (try(aws_wafv2_regex_pattern_set.default[local.regex_rule_to_regex_pattern_set[rule.key]], null) != null ? aws_wafv2_regex_pattern_set.default[local.regex_rule_to_regex_pattern_set[rule.key]].arn : try(regex_pattern_set_reference_statement.value.arnement.value.arn, null))
 
                     dynamic "field_to_match" {
                       for_each = regex_pattern_set_reference_statement.value.field_to_match != null ? [regex_pattern_set_reference_statement.value.field_to_match] : []
@@ -1990,6 +2214,22 @@ resource "aws_wafv2_web_acl" "default" {
                           for_each = lookup(field_to_match.value, "query_string", null) != null ? [1] : []
 
                           content {}
+                        }
+
+                        dynamic "ja3_fingerprint" {
+                          for_each = lookup(field_to_match.value, "ja3_fingerprint", null) != null ? [field_to_match.value.ja3_fingerprint] : []
+
+                          content {
+                            fallback_behavior = ja3_fingerprint.value.fallback_behavior
+                          }
+                        }
+
+                        dynamic "ja4_fingerprint" {
+                          for_each = lookup(field_to_match.value, "ja4_fingerprint", null) != null ? [field_to_match.value.ja4_fingerprint] : []
+
+                          content {
+                            fallback_behavior = ja4_fingerprint.value.fallback_behavior
+                          }
                         }
 
                         dynamic "single_header" {
@@ -2067,6 +2307,22 @@ resource "aws_wafv2_web_acl" "default" {
                           content {}
                         }
 
+                        dynamic "ja3_fingerprint" {
+                          for_each = lookup(field_to_match.value, "ja3_fingerprint", null) != null ? [field_to_match.value.ja3_fingerprint] : []
+
+                          content {
+                            fallback_behavior = ja3_fingerprint.value.fallback_behavior
+                          }
+                        }
+
+                        dynamic "ja4_fingerprint" {
+                          for_each = lookup(field_to_match.value, "ja4_fingerprint", null) != null ? [field_to_match.value.ja4_fingerprint] : []
+
+                          content {
+                            fallback_behavior = ja4_fingerprint.value.fallback_behavior
+                          }
+                        }
+
                         dynamic "single_header" {
                           for_each = lookup(field_to_match.value, "single_header", null) != null ? [field_to_match.value.single_header] : []
 
@@ -2140,6 +2396,22 @@ resource "aws_wafv2_web_acl" "default" {
                                   content {}
                                 }
 
+                                dynamic "ja3_fingerprint" {
+                                  for_each = lookup(field_to_match.value, "ja3_fingerprint", null) != null ? [field_to_match.value.ja3_fingerprint] : []
+
+                                  content {
+                                    fallback_behavior = ja3_fingerprint.value.fallback_behavior
+                                  }
+                                }
+
+                                dynamic "ja4_fingerprint" {
+                                  for_each = lookup(field_to_match.value, "ja4_fingerprint", null) != null ? [field_to_match.value.ja4_fingerprint] : []
+
+                                  content {
+                                    fallback_behavior = ja4_fingerprint.value.fallback_behavior
+                                  }
+                                }
+
                                 dynamic "single_header" {
                                   for_each = lookup(field_to_match.value, "single_header", null) != null ? [field_to_match.value.single_header] : []
 
@@ -2194,7 +2466,7 @@ resource "aws_wafv2_web_acl" "default" {
                         dynamic "regex_pattern_set_reference_statement" {
                           for_each = statement.value.not_regex_pattern_set_reference_statement != null ? [statement.value.not_regex_pattern_set_reference_statement] : []
                           content {
-                            arn = regex_pattern_set_reference_statement.value.arn
+                            arn = try(aws_wafv2_regex_pattern_set.default[local.regex_rule_to_reusable_regex_pattern_set[regex_pattern_set_reference_statement.value.set_name]], null) != null ? aws_wafv2_regex_pattern_set.default[local.regex_rule_to_reusable_regex_pattern_set[regex_pattern_set_reference_statement.value.set_name]].arn : (try(aws_wafv2_regex_pattern_set.default[local.regex_rule_to_regex_pattern_set[rule.key]], null) != null ? aws_wafv2_regex_pattern_set.default[local.regex_rule_to_regex_pattern_set[rule.key]].arn : try(regex_pattern_set_reference_statement.value.arnement.value.arn, null))
 
                             dynamic "field_to_match" {
                               for_each = regex_pattern_set_reference_statement.value.field_to_match != null ? [regex_pattern_set_reference_statement.value.field_to_match] : []
@@ -2221,6 +2493,22 @@ resource "aws_wafv2_web_acl" "default" {
                                   for_each = lookup(field_to_match.value, "query_string", null) != null ? [1] : []
 
                                   content {}
+                                }
+
+                                dynamic "ja3_fingerprint" {
+                                  for_each = lookup(field_to_match.value, "ja3_fingerprint", null) != null ? [field_to_match.value.ja3_fingerprint] : []
+
+                                  content {
+                                    fallback_behavior = ja3_fingerprint.value.fallback_behavior
+                                  }
+                                }
+
+                                dynamic "ja4_fingerprint" {
+                                  for_each = lookup(field_to_match.value, "ja4_fingerprint", null) != null ? [field_to_match.value.ja4_fingerprint] : []
+
+                                  content {
+                                    fallback_behavior = ja4_fingerprint.value.fallback_behavior
+                                  }
                                 }
 
                                 dynamic "single_header" {
@@ -2303,6 +2591,22 @@ resource "aws_wafv2_web_acl" "default" {
                                   content {}
                                 }
 
+                                dynamic "ja3_fingerprint" {
+                                  for_each = lookup(field_to_match.value, "ja3_fingerprint", null) != null ? [field_to_match.value.ja3_fingerprint] : []
+
+                                  content {
+                                    fallback_behavior = ja3_fingerprint.value.fallback_behavior
+                                  }
+                                }
+
+                                dynamic "ja4_fingerprint" {
+                                  for_each = lookup(field_to_match.value, "ja4_fingerprint", null) != null ? [field_to_match.value.ja4_fingerprint] : []
+
+                                  content {
+                                    fallback_behavior = ja4_fingerprint.value.fallback_behavior
+                                  }
+                                }
+
                                 dynamic "single_header" {
                                   for_each = lookup(field_to_match.value, "single_header", null) != null ? [field_to_match.value.single_header] : []
 
@@ -2340,7 +2644,7 @@ resource "aws_wafv2_web_acl" "default" {
                         dynamic "regex_pattern_set_reference_statement" {
                           for_each = nested_statement.value.type == "regex_pattern_set_reference_statement" ? [jsondecode(nested_statement.value.statement)] : []
                           content {
-                            arn = regex_pattern_set_reference_statement.value.arn
+                            arn = try(aws_wafv2_regex_pattern_set.default[local.regex_rule_to_reusable_regex_pattern_set[regex_pattern_set_reference_statement.value.set_name]], null) != null ? aws_wafv2_regex_pattern_set.default[local.regex_rule_to_reusable_regex_pattern_set[regex_pattern_set_reference_statement.value.set_name]].arn : (try(aws_wafv2_regex_pattern_set.default[local.regex_rule_to_regex_pattern_set[rule.key]], null) != null ? aws_wafv2_regex_pattern_set.default[local.regex_rule_to_regex_pattern_set[rule.key]].arn : try(regex_pattern_set_reference_statement.value.arnement.value.arn, null))
 
                             dynamic "field_to_match" {
                               for_each = regex_pattern_set_reference_statement.value.field_to_match != null ? [regex_pattern_set_reference_statement.value.field_to_match] : []
@@ -2367,6 +2671,22 @@ resource "aws_wafv2_web_acl" "default" {
                                   for_each = lookup(field_to_match.value, "query_string", null) != null ? [1] : []
 
                                   content {}
+                                }
+
+                                dynamic "ja3_fingerprint" {
+                                  for_each = lookup(field_to_match.value, "ja3_fingerprint", null) != null ? [field_to_match.value.ja3_fingerprint] : []
+
+                                  content {
+                                    fallback_behavior = ja3_fingerprint.value.fallback_behavior
+                                  }
+                                }
+
+                                dynamic "ja4_fingerprint" {
+                                  for_each = lookup(field_to_match.value, "ja4_fingerprint", null) != null ? [field_to_match.value.ja4_fingerprint] : []
+
+                                  content {
+                                    fallback_behavior = ja4_fingerprint.value.fallback_behavior
+                                  }
                                 }
 
                                 dynamic "single_header" {
@@ -2415,7 +2735,7 @@ resource "aws_wafv2_web_acl" "default" {
                           content {
                             dynamic "statement" {
                               iterator = nested_not_statement
-                              for_each = nested_statement.value.type != null && nested_statement.value.type == "not_byte_match_statement"  ? [1] : []
+                              for_each = nested_statement.value.type != null && nested_statement.value.type == "not_byte_match_statement" ? [1] : []
                               content {
 
                                 dynamic "byte_match_statement" {
@@ -2449,6 +2769,22 @@ resource "aws_wafv2_web_acl" "default" {
                                           for_each = lookup(field_to_match.value, "query_string", null) != null ? [1] : []
 
                                           content {}
+                                        }
+
+                                        dynamic "ja3_fingerprint" {
+                                          for_each = lookup(field_to_match.value, "ja3_fingerprint", null) != null ? [field_to_match.value.ja3_fingerprint] : []
+
+                                          content {
+                                            fallback_behavior = ja3_fingerprint.value.fallback_behavior
+                                          }
+                                        }
+
+                                        dynamic "ja4_fingerprint" {
+                                          for_each = lookup(field_to_match.value, "ja4_fingerprint", null) != null ? [field_to_match.value.ja4_fingerprint] : []
+
+                                          content {
+                                            fallback_behavior = ja4_fingerprint.value.fallback_behavior
+                                          }
                                         }
 
                                         dynamic "single_header" {
@@ -2489,7 +2825,7 @@ resource "aws_wafv2_web_acl" "default" {
                             }
                             dynamic "statement" {
                               iterator = nested_not_statement
-                              for_each = nested_statement.value.type != null && nested_statement.value.type == "not_label_match_statement"  ? [1] : []
+                              for_each = nested_statement.value.type != null && nested_statement.value.type == "not_label_match_statement" ? [1] : []
                               content {
                                 dynamic "label_match_statement" {
                                   for_each = nested_statement.value.type == "not_label_match_statement" ? [jsondecode(nested_statement.value.statement)] : []
@@ -2502,12 +2838,12 @@ resource "aws_wafv2_web_acl" "default" {
                             }
                             dynamic "statement" {
                               iterator = nested_not_statement
-                              for_each = nested_statement.value.type != null && nested_statement.value.type == "not_regex_pattern_set_reference_statement"  ? [1] : []
+                              for_each = nested_statement.value.type != null && nested_statement.value.type == "not_regex_pattern_set_reference_statement" ? [1] : []
                               content {
                                 dynamic "regex_pattern_set_reference_statement" {
                                   for_each = nested_statement.value.type == "not_regex_pattern_set_reference_statement" ? [jsondecode(nested_statement.value.statement)] : []
                                   content {
-                                    arn = regex_pattern_set_reference_statement.value.arn
+                                    arn = try(aws_wafv2_regex_pattern_set.default[local.regex_rule_to_reusable_regex_pattern_set[regex_pattern_set_reference_statement.value.set_name]], null) != null ? aws_wafv2_regex_pattern_set.default[local.regex_rule_to_reusable_regex_pattern_set[regex_pattern_set_reference_statement.value.set_name]].arn : (try(aws_wafv2_regex_pattern_set.default[local.regex_rule_to_regex_pattern_set[rule.key]], null) != null ? aws_wafv2_regex_pattern_set.default[local.regex_rule_to_regex_pattern_set[rule.key]].arn : try(regex_pattern_set_reference_statement.value.arnement.value.arn, null))
 
                                     dynamic "field_to_match" {
                                       for_each = regex_pattern_set_reference_statement.value.field_to_match != null ? [regex_pattern_set_reference_statement.value.field_to_match] : []
@@ -2534,6 +2870,22 @@ resource "aws_wafv2_web_acl" "default" {
                                           for_each = lookup(field_to_match.value, "query_string", null) != null ? [1] : []
 
                                           content {}
+                                        }
+
+                                        dynamic "ja3_fingerprint" {
+                                          for_each = lookup(field_to_match.value, "ja3_fingerprint", null) != null ? [field_to_match.value.ja3_fingerprint] : []
+
+                                          content {
+                                            fallback_behavior = ja3_fingerprint.value.fallback_behavior
+                                          }
+                                        }
+
+                                        dynamic "ja4_fingerprint" {
+                                          for_each = lookup(field_to_match.value, "ja4_fingerprint", null) != null ? [field_to_match.value.ja4_fingerprint] : []
+
+                                          content {
+                                            fallback_behavior = ja4_fingerprint.value.fallback_behavior
+                                          }
                                         }
 
                                         dynamic "single_header" {
@@ -2619,6 +2971,22 @@ resource "aws_wafv2_web_acl" "default" {
                                   content {}
                                 }
 
+                                dynamic "ja3_fingerprint" {
+                                  for_each = lookup(field_to_match.value, "ja3_fingerprint", null) != null ? [field_to_match.value.ja3_fingerprint] : []
+
+                                  content {
+                                    fallback_behavior = ja3_fingerprint.value.fallback_behavior
+                                  }
+                                }
+
+                                dynamic "ja4_fingerprint" {
+                                  for_each = lookup(field_to_match.value, "ja4_fingerprint", null) != null ? [field_to_match.value.ja4_fingerprint] : []
+
+                                  content {
+                                    fallback_behavior = ja4_fingerprint.value.fallback_behavior
+                                  }
+                                }
+
                                 dynamic "single_header" {
                                   for_each = lookup(field_to_match.value, "single_header", null) != null ? [field_to_match.value.single_header] : []
 
@@ -2656,7 +3024,7 @@ resource "aws_wafv2_web_acl" "default" {
                         dynamic "regex_pattern_set_reference_statement" {
                           for_each = nested_statement.value.type == "regex_pattern_set_reference_statement" ? [jsondecode(nested_statement.value.statement)] : []
                           content {
-                            arn = regex_pattern_set_reference_statement.value.arn
+                            arn = try(aws_wafv2_regex_pattern_set.default[local.regex_rule_to_reusable_regex_pattern_set[regex_pattern_set_reference_statement.value.set_name]], null) != null ? aws_wafv2_regex_pattern_set.default[local.regex_rule_to_reusable_regex_pattern_set[regex_pattern_set_reference_statement.value.set_name]].arn : (try(aws_wafv2_regex_pattern_set.default[local.regex_rule_to_regex_pattern_set[rule.key]], null) != null ? aws_wafv2_regex_pattern_set.default[local.regex_rule_to_regex_pattern_set[rule.key]].arn : try(regex_pattern_set_reference_statement.value.arnement.value.arn, null))
 
                             dynamic "field_to_match" {
                               for_each = regex_pattern_set_reference_statement.value.field_to_match != null ? [regex_pattern_set_reference_statement.value.field_to_match] : []
@@ -2683,6 +3051,22 @@ resource "aws_wafv2_web_acl" "default" {
                                   for_each = lookup(field_to_match.value, "query_string", null) != null ? [1] : []
 
                                   content {}
+                                }
+
+                                dynamic "ja3_fingerprint" {
+                                  for_each = lookup(field_to_match.value, "ja3_fingerprint", null) != null ? [field_to_match.value.ja3_fingerprint] : []
+
+                                  content {
+                                    fallback_behavior = ja3_fingerprint.value.fallback_behavior
+                                  }
+                                }
+
+                                dynamic "ja4_fingerprint" {
+                                  for_each = lookup(field_to_match.value, "ja4_fingerprint", null) != null ? [field_to_match.value.ja4_fingerprint] : []
+
+                                  content {
+                                    fallback_behavior = ja4_fingerprint.value.fallback_behavior
+                                  }
                                 }
 
                                 dynamic "single_header" {
@@ -2731,7 +3115,7 @@ resource "aws_wafv2_web_acl" "default" {
                           content {
                             dynamic "statement" {
                               iterator = nested_not_statement
-                              for_each = nested_statement.value.type != null && nested_statement.value.type == "not_byte_match_statement"  ? [1] : []
+                              for_each = nested_statement.value.type != null && nested_statement.value.type == "not_byte_match_statement" ? [1] : []
                               content {
 
                                 dynamic "byte_match_statement" {
@@ -2765,6 +3149,22 @@ resource "aws_wafv2_web_acl" "default" {
                                           for_each = lookup(field_to_match.value, "query_string", null) != null ? [1] : []
 
                                           content {}
+                                        }
+
+                                        dynamic "ja3_fingerprint" {
+                                          for_each = lookup(field_to_match.value, "ja3_fingerprint", null) != null ? [field_to_match.value.ja3_fingerprint] : []
+
+                                          content {
+                                            fallback_behavior = ja3_fingerprint.value.fallback_behavior
+                                          }
+                                        }
+
+                                        dynamic "ja4_fingerprint" {
+                                          for_each = lookup(field_to_match.value, "ja4_fingerprint", null) != null ? [field_to_match.value.ja4_fingerprint] : []
+
+                                          content {
+                                            fallback_behavior = ja4_fingerprint.value.fallback_behavior
+                                          }
                                         }
 
                                         dynamic "single_header" {
@@ -2805,7 +3205,7 @@ resource "aws_wafv2_web_acl" "default" {
                             }
                             dynamic "statement" {
                               iterator = nested_not_statement
-                              for_each = nested_statement.value.type != null && nested_statement.value.type == "not_label_match_statement"  ? [1] : []
+                              for_each = nested_statement.value.type != null && nested_statement.value.type == "not_label_match_statement" ? [1] : []
                               content {
                                 dynamic "label_match_statement" {
                                   for_each = nested_statement.value.type == "not_label_match_statement" ? [jsondecode(nested_statement.value.statement)] : []
@@ -2818,12 +3218,12 @@ resource "aws_wafv2_web_acl" "default" {
                             }
                             dynamic "statement" {
                               iterator = nested_not_statement
-                              for_each = nested_statement.value.type != null && nested_statement.value.type == "not_regex_pattern_set_reference_statement"  ? [1] : []
+                              for_each = nested_statement.value.type != null && nested_statement.value.type == "not_regex_pattern_set_reference_statement" ? [1] : []
                               content {
                                 dynamic "regex_pattern_set_reference_statement" {
                                   for_each = nested_statement.value.type == "not_regex_pattern_set_reference_statement" ? [jsondecode(nested_statement.value.statement)] : []
                                   content {
-                                    arn = regex_pattern_set_reference_statement.value.arn
+                                    arn = try(aws_wafv2_regex_pattern_set.default[local.regex_rule_to_reusable_regex_pattern_set[regex_pattern_set_reference_statement.value.set_name]], null) != null ? aws_wafv2_regex_pattern_set.default[local.regex_rule_to_reusable_regex_pattern_set[regex_pattern_set_reference_statement.value.set_name]].arn : (try(aws_wafv2_regex_pattern_set.default[local.regex_rule_to_regex_pattern_set[rule.key]], null) != null ? aws_wafv2_regex_pattern_set.default[local.regex_rule_to_regex_pattern_set[rule.key]].arn : try(regex_pattern_set_reference_statement.value.arnement.value.arn, null))
 
                                     dynamic "field_to_match" {
                                       for_each = regex_pattern_set_reference_statement.value.field_to_match != null ? [regex_pattern_set_reference_statement.value.field_to_match] : []
@@ -2850,6 +3250,22 @@ resource "aws_wafv2_web_acl" "default" {
                                           for_each = lookup(field_to_match.value, "query_string", null) != null ? [1] : []
 
                                           content {}
+                                        }
+
+                                        dynamic "ja3_fingerprint" {
+                                          for_each = lookup(field_to_match.value, "ja3_fingerprint", null) != null ? [field_to_match.value.ja3_fingerprint] : []
+
+                                          content {
+                                            fallback_behavior = ja3_fingerprint.value.fallback_behavior
+                                          }
+                                        }
+
+                                        dynamic "ja4_fingerprint" {
+                                          for_each = lookup(field_to_match.value, "ja4_fingerprint", null) != null ? [field_to_match.value.ja4_fingerprint] : []
+
+                                          content {
+                                            fallback_behavior = ja4_fingerprint.value.fallback_behavior
+                                          }
                                         }
 
                                         dynamic "single_header" {
@@ -2988,6 +3404,22 @@ resource "aws_wafv2_web_acl" "default" {
                   content {}
                 }
 
+                dynamic "ja3_fingerprint" {
+                  for_each = lookup(field_to_match.value, "ja3_fingerprint", null) != null ? [field_to_match.value.ja3_fingerprint] : []
+
+                  content {
+                    fallback_behavior = ja3_fingerprint.value.fallback_behavior
+                  }
+                }
+
+                dynamic "ja4_fingerprint" {
+                  for_each = lookup(field_to_match.value, "ja4_fingerprint", null) != null ? [field_to_match.value.ja4_fingerprint] : []
+
+                  content {
+                    fallback_behavior = ja4_fingerprint.value.fallback_behavior
+                  }
+                }
+
                 dynamic "single_header" {
                   for_each = lookup(field_to_match.value, "single_header", null) != null ? [field_to_match.value.single_header] : []
 
@@ -3115,6 +3547,22 @@ resource "aws_wafv2_web_acl" "default" {
                   content {}
                 }
 
+                dynamic "ja3_fingerprint" {
+                  for_each = lookup(field_to_match.value, "ja3_fingerprint", null) != null ? [field_to_match.value.ja3_fingerprint] : []
+
+                  content {
+                    fallback_behavior = ja3_fingerprint.value.fallback_behavior
+                  }
+                }
+
+                dynamic "ja4_fingerprint" {
+                  for_each = lookup(field_to_match.value, "ja4_fingerprint", null) != null ? [field_to_match.value.ja4_fingerprint] : []
+
+                  content {
+                    fallback_behavior = ja4_fingerprint.value.fallback_behavior
+                  }
+                }
+
                 dynamic "single_header" {
                   for_each = lookup(field_to_match.value, "single_header", null) != null ? [field_to_match.value.single_header] : []
 
@@ -3157,7 +3605,7 @@ resource "aws_wafv2_web_acl" "default" {
                 dynamic "regex_pattern_set_reference_statement" {
                   for_each = scope_down_statement.value.regex_pattern_set_reference_statement != null ? [scope_down_statement.value.regex_pattern_set_reference_statement] : []
                   content {
-                    arn = regex_pattern_set_reference_statement.value.arn
+                    arn = try(aws_wafv2_regex_pattern_set.default[local.regex_rule_to_reusable_regex_pattern_set[regex_pattern_set_reference_statement.value.set_name]], null) != null ? aws_wafv2_regex_pattern_set.default[local.regex_rule_to_reusable_regex_pattern_set[regex_pattern_set_reference_statement.value.set_name]].arn : (try(aws_wafv2_regex_pattern_set.default[local.regex_rule_to_regex_pattern_set[rule.key]], null) != null ? aws_wafv2_regex_pattern_set.default[local.regex_rule_to_regex_pattern_set[rule.key]].arn : try(regex_pattern_set_reference_statement.value.arnement.value.arn, null))
 
                     dynamic "field_to_match" {
                       for_each = regex_pattern_set_reference_statement.value.field_to_match != null ? [regex_pattern_set_reference_statement.value.field_to_match] : []
@@ -3184,6 +3632,22 @@ resource "aws_wafv2_web_acl" "default" {
                           for_each = lookup(field_to_match.value, "query_string", null) != null ? [1] : []
 
                           content {}
+                        }
+
+                        dynamic "ja3_fingerprint" {
+                          for_each = lookup(field_to_match.value, "ja3_fingerprint", null) != null ? [field_to_match.value.ja3_fingerprint] : []
+
+                          content {
+                            fallback_behavior = ja3_fingerprint.value.fallback_behavior
+                          }
+                        }
+
+                        dynamic "ja4_fingerprint" {
+                          for_each = lookup(field_to_match.value, "ja4_fingerprint", null) != null ? [field_to_match.value.ja4_fingerprint] : []
+
+                          content {
+                            fallback_behavior = ja4_fingerprint.value.fallback_behavior
+                          }
                         }
 
                         dynamic "single_header" {
@@ -3261,6 +3725,22 @@ resource "aws_wafv2_web_acl" "default" {
                           content {}
                         }
 
+                        dynamic "ja3_fingerprint" {
+                          for_each = lookup(field_to_match.value, "ja3_fingerprint", null) != null ? [field_to_match.value.ja3_fingerprint] : []
+
+                          content {
+                            fallback_behavior = ja3_fingerprint.value.fallback_behavior
+                          }
+                        }
+
+                        dynamic "ja4_fingerprint" {
+                          for_each = lookup(field_to_match.value, "ja4_fingerprint", null) != null ? [field_to_match.value.ja4_fingerprint] : []
+
+                          content {
+                            fallback_behavior = ja4_fingerprint.value.fallback_behavior
+                          }
+                        }
+
                         dynamic "single_header" {
                           for_each = lookup(field_to_match.value, "single_header", null) != null ? [field_to_match.value.single_header] : []
 
@@ -3334,6 +3814,22 @@ resource "aws_wafv2_web_acl" "default" {
                                   content {}
                                 }
 
+                                dynamic "ja3_fingerprint" {
+                                  for_each = lookup(field_to_match.value, "ja3_fingerprint", null) != null ? [field_to_match.value.ja3_fingerprint] : []
+
+                                  content {
+                                    fallback_behavior = ja3_fingerprint.value.fallback_behavior
+                                  }
+                                }
+
+                                dynamic "ja4_fingerprint" {
+                                  for_each = lookup(field_to_match.value, "ja4_fingerprint", null) != null ? [field_to_match.value.ja4_fingerprint] : []
+
+                                  content {
+                                    fallback_behavior = ja4_fingerprint.value.fallback_behavior
+                                  }
+                                }
+
                                 dynamic "single_header" {
                                   for_each = lookup(field_to_match.value, "single_header", null) != null ? [field_to_match.value.single_header] : []
 
@@ -3388,7 +3884,7 @@ resource "aws_wafv2_web_acl" "default" {
                         dynamic "regex_pattern_set_reference_statement" {
                           for_each = statement.value.not_regex_pattern_set_reference_statement != null ? [statement.value.not_regex_pattern_set_reference_statement] : []
                           content {
-                            arn = regex_pattern_set_reference_statement.value.arn
+                            arn = try(aws_wafv2_regex_pattern_set.default[local.regex_rule_to_reusable_regex_pattern_set[regex_pattern_set_reference_statement.value.set_name]], null) != null ? aws_wafv2_regex_pattern_set.default[local.regex_rule_to_reusable_regex_pattern_set[regex_pattern_set_reference_statement.value.set_name]].arn : (try(aws_wafv2_regex_pattern_set.default[local.regex_rule_to_regex_pattern_set[rule.key]], null) != null ? aws_wafv2_regex_pattern_set.default[local.regex_rule_to_regex_pattern_set[rule.key]].arn : try(regex_pattern_set_reference_statement.value.arnement.value.arn, null))
 
                             dynamic "field_to_match" {
                               for_each = regex_pattern_set_reference_statement.value.field_to_match != null ? [regex_pattern_set_reference_statement.value.field_to_match] : []
@@ -3415,6 +3911,22 @@ resource "aws_wafv2_web_acl" "default" {
                                   for_each = lookup(field_to_match.value, "query_string", null) != null ? [1] : []
 
                                   content {}
+                                }
+
+                                dynamic "ja3_fingerprint" {
+                                  for_each = lookup(field_to_match.value, "ja3_fingerprint", null) != null ? [field_to_match.value.ja3_fingerprint] : []
+
+                                  content {
+                                    fallback_behavior = ja3_fingerprint.value.fallback_behavior
+                                  }
+                                }
+
+                                dynamic "ja4_fingerprint" {
+                                  for_each = lookup(field_to_match.value, "ja4_fingerprint", null) != null ? [field_to_match.value.ja4_fingerprint] : []
+
+                                  content {
+                                    fallback_behavior = ja4_fingerprint.value.fallback_behavior
+                                  }
                                 }
 
                                 dynamic "single_header" {
@@ -3497,6 +4009,22 @@ resource "aws_wafv2_web_acl" "default" {
                                   content {}
                                 }
 
+                                dynamic "ja3_fingerprint" {
+                                  for_each = lookup(field_to_match.value, "ja3_fingerprint", null) != null ? [field_to_match.value.ja3_fingerprint] : []
+
+                                  content {
+                                    fallback_behavior = ja3_fingerprint.value.fallback_behavior
+                                  }
+                                }
+
+                                dynamic "ja4_fingerprint" {
+                                  for_each = lookup(field_to_match.value, "ja4_fingerprint", null) != null ? [field_to_match.value.ja4_fingerprint] : []
+
+                                  content {
+                                    fallback_behavior = ja4_fingerprint.value.fallback_behavior
+                                  }
+                                }
+
                                 dynamic "single_header" {
                                   for_each = lookup(field_to_match.value, "single_header", null) != null ? [field_to_match.value.single_header] : []
 
@@ -3534,7 +4062,7 @@ resource "aws_wafv2_web_acl" "default" {
                         dynamic "regex_pattern_set_reference_statement" {
                           for_each = nested_statement.value.type == "regex_pattern_set_reference_statement" ? [jsondecode(nested_statement.value.statement)] : []
                           content {
-                            arn = regex_pattern_set_reference_statement.value.arn
+                            arn = try(aws_wafv2_regex_pattern_set.default[local.regex_rule_to_reusable_regex_pattern_set[regex_pattern_set_reference_statement.value.set_name]], null) != null ? aws_wafv2_regex_pattern_set.default[local.regex_rule_to_reusable_regex_pattern_set[regex_pattern_set_reference_statement.value.set_name]].arn : (try(aws_wafv2_regex_pattern_set.default[local.regex_rule_to_regex_pattern_set[rule.key]], null) != null ? aws_wafv2_regex_pattern_set.default[local.regex_rule_to_regex_pattern_set[rule.key]].arn : try(regex_pattern_set_reference_statement.value.arnement.value.arn, null))
 
                             dynamic "field_to_match" {
                               for_each = regex_pattern_set_reference_statement.value.field_to_match != null ? [regex_pattern_set_reference_statement.value.field_to_match] : []
@@ -3561,6 +4089,22 @@ resource "aws_wafv2_web_acl" "default" {
                                   for_each = lookup(field_to_match.value, "query_string", null) != null ? [1] : []
 
                                   content {}
+                                }
+
+                                dynamic "ja3_fingerprint" {
+                                  for_each = lookup(field_to_match.value, "ja3_fingerprint", null) != null ? [field_to_match.value.ja3_fingerprint] : []
+
+                                  content {
+                                    fallback_behavior = ja3_fingerprint.value.fallback_behavior
+                                  }
+                                }
+
+                                dynamic "ja4_fingerprint" {
+                                  for_each = lookup(field_to_match.value, "ja4_fingerprint", null) != null ? [field_to_match.value.ja4_fingerprint] : []
+
+                                  content {
+                                    fallback_behavior = ja4_fingerprint.value.fallback_behavior
+                                  }
                                 }
 
                                 dynamic "single_header" {
@@ -3609,7 +4153,7 @@ resource "aws_wafv2_web_acl" "default" {
                           content {
                             dynamic "statement" {
                               iterator = nested_not_statement
-                              for_each = nested_statement.value.type != null && nested_statement.value.type == "not_byte_match_statement"  ? [1] : []
+                              for_each = nested_statement.value.type != null && nested_statement.value.type == "not_byte_match_statement" ? [1] : []
                               content {
 
                                 dynamic "byte_match_statement" {
@@ -3643,6 +4187,22 @@ resource "aws_wafv2_web_acl" "default" {
                                           for_each = lookup(field_to_match.value, "query_string", null) != null ? [1] : []
 
                                           content {}
+                                        }
+
+                                        dynamic "ja3_fingerprint" {
+                                          for_each = lookup(field_to_match.value, "ja3_fingerprint", null) != null ? [field_to_match.value.ja3_fingerprint] : []
+
+                                          content {
+                                            fallback_behavior = ja3_fingerprint.value.fallback_behavior
+                                          }
+                                        }
+
+                                        dynamic "ja4_fingerprint" {
+                                          for_each = lookup(field_to_match.value, "ja4_fingerprint", null) != null ? [field_to_match.value.ja4_fingerprint] : []
+
+                                          content {
+                                            fallback_behavior = ja4_fingerprint.value.fallback_behavior
+                                          }
                                         }
 
                                         dynamic "single_header" {
@@ -3683,7 +4243,7 @@ resource "aws_wafv2_web_acl" "default" {
                             }
                             dynamic "statement" {
                               iterator = nested_not_statement
-                              for_each = nested_statement.value.type != null && nested_statement.value.type == "not_label_match_statement"  ? [1] : []
+                              for_each = nested_statement.value.type != null && nested_statement.value.type == "not_label_match_statement" ? [1] : []
                               content {
                                 dynamic "label_match_statement" {
                                   for_each = nested_statement.value.type == "not_label_match_statement" ? [jsondecode(nested_statement.value.statement)] : []
@@ -3696,12 +4256,12 @@ resource "aws_wafv2_web_acl" "default" {
                             }
                             dynamic "statement" {
                               iterator = nested_not_statement
-                              for_each = nested_statement.value.type != null && nested_statement.value.type == "not_regex_pattern_set_reference_statement"  ? [1] : []
+                              for_each = nested_statement.value.type != null && nested_statement.value.type == "not_regex_pattern_set_reference_statement" ? [1] : []
                               content {
                                 dynamic "regex_pattern_set_reference_statement" {
                                   for_each = nested_statement.value.type == "not_regex_pattern_set_reference_statement" ? [jsondecode(nested_statement.value.statement)] : []
                                   content {
-                                    arn = regex_pattern_set_reference_statement.value.arn
+                                    arn = try(aws_wafv2_regex_pattern_set.default[local.regex_rule_to_reusable_regex_pattern_set[regex_pattern_set_reference_statement.value.set_name]], null) != null ? aws_wafv2_regex_pattern_set.default[local.regex_rule_to_reusable_regex_pattern_set[regex_pattern_set_reference_statement.value.set_name]].arn : (try(aws_wafv2_regex_pattern_set.default[local.regex_rule_to_regex_pattern_set[rule.key]], null) != null ? aws_wafv2_regex_pattern_set.default[local.regex_rule_to_regex_pattern_set[rule.key]].arn : try(regex_pattern_set_reference_statement.value.arnement.value.arn, null))
 
                                     dynamic "field_to_match" {
                                       for_each = regex_pattern_set_reference_statement.value.field_to_match != null ? [regex_pattern_set_reference_statement.value.field_to_match] : []
@@ -3728,6 +4288,22 @@ resource "aws_wafv2_web_acl" "default" {
                                           for_each = lookup(field_to_match.value, "query_string", null) != null ? [1] : []
 
                                           content {}
+                                        }
+
+                                        dynamic "ja3_fingerprint" {
+                                          for_each = lookup(field_to_match.value, "ja3_fingerprint", null) != null ? [field_to_match.value.ja3_fingerprint] : []
+
+                                          content {
+                                            fallback_behavior = ja3_fingerprint.value.fallback_behavior
+                                          }
+                                        }
+
+                                        dynamic "ja4_fingerprint" {
+                                          for_each = lookup(field_to_match.value, "ja4_fingerprint", null) != null ? [field_to_match.value.ja4_fingerprint] : []
+
+                                          content {
+                                            fallback_behavior = ja4_fingerprint.value.fallback_behavior
+                                          }
                                         }
 
                                         dynamic "single_header" {
@@ -3813,6 +4389,22 @@ resource "aws_wafv2_web_acl" "default" {
                                   content {}
                                 }
 
+                                dynamic "ja3_fingerprint" {
+                                  for_each = lookup(field_to_match.value, "ja3_fingerprint", null) != null ? [field_to_match.value.ja3_fingerprint] : []
+
+                                  content {
+                                    fallback_behavior = ja3_fingerprint.value.fallback_behavior
+                                  }
+                                }
+
+                                dynamic "ja4_fingerprint" {
+                                  for_each = lookup(field_to_match.value, "ja4_fingerprint", null) != null ? [field_to_match.value.ja4_fingerprint] : []
+
+                                  content {
+                                    fallback_behavior = ja4_fingerprint.value.fallback_behavior
+                                  }
+                                }
+
                                 dynamic "single_header" {
                                   for_each = lookup(field_to_match.value, "single_header", null) != null ? [field_to_match.value.single_header] : []
 
@@ -3850,7 +4442,7 @@ resource "aws_wafv2_web_acl" "default" {
                         dynamic "regex_pattern_set_reference_statement" {
                           for_each = nested_statement.value.type == "regex_pattern_set_reference_statement" ? [jsondecode(nested_statement.value.statement)] : []
                           content {
-                            arn = regex_pattern_set_reference_statement.value.arn
+                            arn = try(aws_wafv2_regex_pattern_set.default[local.regex_rule_to_reusable_regex_pattern_set[regex_pattern_set_reference_statement.value.set_name]], null) != null ? aws_wafv2_regex_pattern_set.default[local.regex_rule_to_reusable_regex_pattern_set[regex_pattern_set_reference_statement.value.set_name]].arn : (try(aws_wafv2_regex_pattern_set.default[local.regex_rule_to_regex_pattern_set[rule.key]], null) != null ? aws_wafv2_regex_pattern_set.default[local.regex_rule_to_regex_pattern_set[rule.key]].arn : try(regex_pattern_set_reference_statement.value.arnement.value.arn, null))
 
                             dynamic "field_to_match" {
                               for_each = regex_pattern_set_reference_statement.value.field_to_match != null ? [regex_pattern_set_reference_statement.value.field_to_match] : []
@@ -3877,6 +4469,22 @@ resource "aws_wafv2_web_acl" "default" {
                                   for_each = lookup(field_to_match.value, "query_string", null) != null ? [1] : []
 
                                   content {}
+                                }
+
+                                dynamic "ja3_fingerprint" {
+                                  for_each = lookup(field_to_match.value, "ja3_fingerprint", null) != null ? [field_to_match.value.ja3_fingerprint] : []
+
+                                  content {
+                                    fallback_behavior = ja3_fingerprint.value.fallback_behavior
+                                  }
+                                }
+
+                                dynamic "ja4_fingerprint" {
+                                  for_each = lookup(field_to_match.value, "ja4_fingerprint", null) != null ? [field_to_match.value.ja4_fingerprint] : []
+
+                                  content {
+                                    fallback_behavior = ja4_fingerprint.value.fallback_behavior
+                                  }
                                 }
 
                                 dynamic "single_header" {
@@ -3925,7 +4533,7 @@ resource "aws_wafv2_web_acl" "default" {
                           content {
                             dynamic "statement" {
                               iterator = nested_not_statement
-                              for_each = nested_statement.value.type != null && nested_statement.value.type == "not_byte_match_statement"  ? [1] : []
+                              for_each = nested_statement.value.type != null && nested_statement.value.type == "not_byte_match_statement" ? [1] : []
                               content {
 
                                 dynamic "byte_match_statement" {
@@ -3959,6 +4567,22 @@ resource "aws_wafv2_web_acl" "default" {
                                           for_each = lookup(field_to_match.value, "query_string", null) != null ? [1] : []
 
                                           content {}
+                                        }
+
+                                        dynamic "ja3_fingerprint" {
+                                          for_each = lookup(field_to_match.value, "ja3_fingerprint", null) != null ? [field_to_match.value.ja3_fingerprint] : []
+
+                                          content {
+                                            fallback_behavior = ja3_fingerprint.value.fallback_behavior
+                                          }
+                                        }
+
+                                        dynamic "ja4_fingerprint" {
+                                          for_each = lookup(field_to_match.value, "ja4_fingerprint", null) != null ? [field_to_match.value.ja4_fingerprint] : []
+
+                                          content {
+                                            fallback_behavior = ja4_fingerprint.value.fallback_behavior
+                                          }
                                         }
 
                                         dynamic "single_header" {
@@ -3999,7 +4623,7 @@ resource "aws_wafv2_web_acl" "default" {
                             }
                             dynamic "statement" {
                               iterator = nested_not_statement
-                              for_each = nested_statement.value.type != null && nested_statement.value.type == "not_label_match_statement"  ? [1] : []
+                              for_each = nested_statement.value.type != null && nested_statement.value.type == "not_label_match_statement" ? [1] : []
                               content {
                                 dynamic "label_match_statement" {
                                   for_each = nested_statement.value.type == "not_label_match_statement" ? [jsondecode(nested_statement.value.statement)] : []
@@ -4012,12 +4636,12 @@ resource "aws_wafv2_web_acl" "default" {
                             }
                             dynamic "statement" {
                               iterator = nested_not_statement
-                              for_each = nested_statement.value.type != null && nested_statement.value.type == "not_regex_pattern_set_reference_statement"  ? [1] : []
+                              for_each = nested_statement.value.type != null && nested_statement.value.type == "not_regex_pattern_set_reference_statement" ? [1] : []
                               content {
                                 dynamic "regex_pattern_set_reference_statement" {
                                   for_each = nested_statement.value.type == "not_regex_pattern_set_reference_statement" ? [jsondecode(nested_statement.value.statement)] : []
                                   content {
-                                    arn = regex_pattern_set_reference_statement.value.arn
+                                    arn = try(aws_wafv2_regex_pattern_set.default[local.regex_rule_to_reusable_regex_pattern_set[regex_pattern_set_reference_statement.value.set_name]], null) != null ? aws_wafv2_regex_pattern_set.default[local.regex_rule_to_reusable_regex_pattern_set[regex_pattern_set_reference_statement.value.set_name]].arn : (try(aws_wafv2_regex_pattern_set.default[local.regex_rule_to_regex_pattern_set[rule.key]], null) != null ? aws_wafv2_regex_pattern_set.default[local.regex_rule_to_regex_pattern_set[rule.key]].arn : try(regex_pattern_set_reference_statement.value.arnement.value.arn, null))
 
                                     dynamic "field_to_match" {
                                       for_each = regex_pattern_set_reference_statement.value.field_to_match != null ? [regex_pattern_set_reference_statement.value.field_to_match] : []
@@ -4044,6 +4668,22 @@ resource "aws_wafv2_web_acl" "default" {
                                           for_each = lookup(field_to_match.value, "query_string", null) != null ? [1] : []
 
                                           content {}
+                                        }
+
+                                        dynamic "ja3_fingerprint" {
+                                          for_each = lookup(field_to_match.value, "ja3_fingerprint", null) != null ? [field_to_match.value.ja3_fingerprint] : []
+
+                                          content {
+                                            fallback_behavior = ja3_fingerprint.value.fallback_behavior
+                                          }
+                                        }
+
+                                        dynamic "ja4_fingerprint" {
+                                          for_each = lookup(field_to_match.value, "ja4_fingerprint", null) != null ? [field_to_match.value.ja4_fingerprint] : []
+
+                                          content {
+                                            fallback_behavior = ja4_fingerprint.value.fallback_behavior
+                                          }
                                         }
 
                                         dynamic "single_header" {
@@ -4356,6 +4996,22 @@ resource "aws_wafv2_web_acl" "default" {
                   content {}
                 }
 
+                dynamic "ja3_fingerprint" {
+                  for_each = lookup(field_to_match.value, "ja3_fingerprint", null) != null ? [field_to_match.value.ja3_fingerprint] : []
+
+                  content {
+                    fallback_behavior = ja3_fingerprint.value.fallback_behavior
+                  }
+                }
+
+                dynamic "ja4_fingerprint" {
+                  for_each = lookup(field_to_match.value, "ja4_fingerprint", null) != null ? [field_to_match.value.ja4_fingerprint] : []
+
+                  content {
+                    fallback_behavior = ja4_fingerprint.value.fallback_behavior
+                  }
+                }
+
                 dynamic "single_header" {
                   for_each = lookup(field_to_match.value, "single_header", null) != null ? [field_to_match.value.single_header] : []
 
@@ -4485,6 +5141,22 @@ resource "aws_wafv2_web_acl" "default" {
                   content {}
                 }
 
+                dynamic "ja3_fingerprint" {
+                  for_each = lookup(field_to_match.value, "ja3_fingerprint", null) != null ? [field_to_match.value.ja3_fingerprint] : []
+
+                  content {
+                    fallback_behavior = ja3_fingerprint.value.fallback_behavior
+                  }
+                }
+
+                dynamic "ja4_fingerprint" {
+                  for_each = lookup(field_to_match.value, "ja4_fingerprint", null) != null ? [field_to_match.value.ja4_fingerprint] : []
+
+                  content {
+                    fallback_behavior = ja4_fingerprint.value.fallback_behavior
+                  }
+                }
+
                 dynamic "single_header" {
                   for_each = lookup(field_to_match.value, "single_header", null) != null ? [field_to_match.value.single_header] : []
 
@@ -4527,7 +5199,7 @@ resource "aws_wafv2_web_acl" "default" {
                 dynamic "regex_pattern_set_reference_statement" {
                   for_each = scope_down_statement.value.regex_pattern_set_reference_statement != null ? [scope_down_statement.value.regex_pattern_set_reference_statement] : []
                   content {
-                    arn = regex_pattern_set_reference_statement.value.arn
+                    arn = try(aws_wafv2_regex_pattern_set.default[local.regex_rule_to_reusable_regex_pattern_set[regex_pattern_set_reference_statement.value.set_name]], null) != null ? aws_wafv2_regex_pattern_set.default[local.regex_rule_to_reusable_regex_pattern_set[regex_pattern_set_reference_statement.value.set_name]].arn : (try(aws_wafv2_regex_pattern_set.default[local.regex_rule_to_regex_pattern_set[rule.key]], null) != null ? aws_wafv2_regex_pattern_set.default[local.regex_rule_to_regex_pattern_set[rule.key]].arn : try(regex_pattern_set_reference_statement.value.arnement.value.arn, null))
 
                     dynamic "field_to_match" {
                       for_each = regex_pattern_set_reference_statement.value.field_to_match != null ? [regex_pattern_set_reference_statement.value.field_to_match] : []
@@ -4554,6 +5226,22 @@ resource "aws_wafv2_web_acl" "default" {
                           for_each = lookup(field_to_match.value, "query_string", null) != null ? [1] : []
 
                           content {}
+                        }
+
+                        dynamic "ja3_fingerprint" {
+                          for_each = lookup(field_to_match.value, "ja3_fingerprint", null) != null ? [field_to_match.value.ja3_fingerprint] : []
+
+                          content {
+                            fallback_behavior = ja3_fingerprint.value.fallback_behavior
+                          }
+                        }
+
+                        dynamic "ja4_fingerprint" {
+                          for_each = lookup(field_to_match.value, "ja4_fingerprint", null) != null ? [field_to_match.value.ja4_fingerprint] : []
+
+                          content {
+                            fallback_behavior = ja4_fingerprint.value.fallback_behavior
+                          }
                         }
 
                         dynamic "single_header" {
@@ -4631,6 +5319,22 @@ resource "aws_wafv2_web_acl" "default" {
                           content {}
                         }
 
+                        dynamic "ja3_fingerprint" {
+                          for_each = lookup(field_to_match.value, "ja3_fingerprint", null) != null ? [field_to_match.value.ja3_fingerprint] : []
+
+                          content {
+                            fallback_behavior = ja3_fingerprint.value.fallback_behavior
+                          }
+                        }
+
+                        dynamic "ja4_fingerprint" {
+                          for_each = lookup(field_to_match.value, "ja4_fingerprint", null) != null ? [field_to_match.value.ja4_fingerprint] : []
+
+                          content {
+                            fallback_behavior = ja4_fingerprint.value.fallback_behavior
+                          }
+                        }
+
                         dynamic "single_header" {
                           for_each = lookup(field_to_match.value, "single_header", null) != null ? [field_to_match.value.single_header] : []
 
@@ -4704,6 +5408,22 @@ resource "aws_wafv2_web_acl" "default" {
                                   content {}
                                 }
 
+                                dynamic "ja3_fingerprint" {
+                                  for_each = lookup(field_to_match.value, "ja3_fingerprint", null) != null ? [field_to_match.value.ja3_fingerprint] : []
+
+                                  content {
+                                    fallback_behavior = ja3_fingerprint.value.fallback_behavior
+                                  }
+                                }
+
+                                dynamic "ja4_fingerprint" {
+                                  for_each = lookup(field_to_match.value, "ja4_fingerprint", null) != null ? [field_to_match.value.ja4_fingerprint] : []
+
+                                  content {
+                                    fallback_behavior = ja4_fingerprint.value.fallback_behavior
+                                  }
+                                }
+
                                 dynamic "single_header" {
                                   for_each = lookup(field_to_match.value, "single_header", null) != null ? [field_to_match.value.single_header] : []
 
@@ -4758,7 +5478,7 @@ resource "aws_wafv2_web_acl" "default" {
                         dynamic "regex_pattern_set_reference_statement" {
                           for_each = statement.value.not_regex_pattern_set_reference_statement != null ? [statement.value.not_regex_pattern_set_reference_statement] : []
                           content {
-                            arn = regex_pattern_set_reference_statement.value.arn
+                            arn = try(aws_wafv2_regex_pattern_set.default[local.regex_rule_to_reusable_regex_pattern_set[regex_pattern_set_reference_statement.value.set_name]], null) != null ? aws_wafv2_regex_pattern_set.default[local.regex_rule_to_reusable_regex_pattern_set[regex_pattern_set_reference_statement.value.set_name]].arn : (try(aws_wafv2_regex_pattern_set.default[local.regex_rule_to_regex_pattern_set[rule.key]], null) != null ? aws_wafv2_regex_pattern_set.default[local.regex_rule_to_regex_pattern_set[rule.key]].arn : try(regex_pattern_set_reference_statement.value.arnement.value.arn, null))
 
                             dynamic "field_to_match" {
                               for_each = regex_pattern_set_reference_statement.value.field_to_match != null ? [regex_pattern_set_reference_statement.value.field_to_match] : []
@@ -4785,6 +5505,22 @@ resource "aws_wafv2_web_acl" "default" {
                                   for_each = lookup(field_to_match.value, "query_string", null) != null ? [1] : []
 
                                   content {}
+                                }
+
+                                dynamic "ja3_fingerprint" {
+                                  for_each = lookup(field_to_match.value, "ja3_fingerprint", null) != null ? [field_to_match.value.ja3_fingerprint] : []
+
+                                  content {
+                                    fallback_behavior = ja3_fingerprint.value.fallback_behavior
+                                  }
+                                }
+
+                                dynamic "ja4_fingerprint" {
+                                  for_each = lookup(field_to_match.value, "ja4_fingerprint", null) != null ? [field_to_match.value.ja4_fingerprint] : []
+
+                                  content {
+                                    fallback_behavior = ja4_fingerprint.value.fallback_behavior
+                                  }
                                 }
 
                                 dynamic "single_header" {
@@ -4867,6 +5603,22 @@ resource "aws_wafv2_web_acl" "default" {
                                   content {}
                                 }
 
+                                dynamic "ja3_fingerprint" {
+                                  for_each = lookup(field_to_match.value, "ja3_fingerprint", null) != null ? [field_to_match.value.ja3_fingerprint] : []
+
+                                  content {
+                                    fallback_behavior = ja3_fingerprint.value.fallback_behavior
+                                  }
+                                }
+
+                                dynamic "ja4_fingerprint" {
+                                  for_each = lookup(field_to_match.value, "ja4_fingerprint", null) != null ? [field_to_match.value.ja4_fingerprint] : []
+
+                                  content {
+                                    fallback_behavior = ja4_fingerprint.value.fallback_behavior
+                                  }
+                                }
+
                                 dynamic "single_header" {
                                   for_each = lookup(field_to_match.value, "single_header", null) != null ? [field_to_match.value.single_header] : []
 
@@ -4904,7 +5656,7 @@ resource "aws_wafv2_web_acl" "default" {
                         dynamic "regex_pattern_set_reference_statement" {
                           for_each = nested_statement.value.type == "regex_pattern_set_reference_statement" ? [jsondecode(nested_statement.value.statement)] : []
                           content {
-                            arn = regex_pattern_set_reference_statement.value.arn
+                            arn = try(aws_wafv2_regex_pattern_set.default[local.regex_rule_to_reusable_regex_pattern_set[regex_pattern_set_reference_statement.value.set_name]], null) != null ? aws_wafv2_regex_pattern_set.default[local.regex_rule_to_reusable_regex_pattern_set[regex_pattern_set_reference_statement.value.set_name]].arn : (try(aws_wafv2_regex_pattern_set.default[local.regex_rule_to_regex_pattern_set[rule.key]], null) != null ? aws_wafv2_regex_pattern_set.default[local.regex_rule_to_regex_pattern_set[rule.key]].arn : try(regex_pattern_set_reference_statement.value.arnement.value.arn, null))
 
                             dynamic "field_to_match" {
                               for_each = regex_pattern_set_reference_statement.value.field_to_match != null ? [regex_pattern_set_reference_statement.value.field_to_match] : []
@@ -4931,6 +5683,22 @@ resource "aws_wafv2_web_acl" "default" {
                                   for_each = lookup(field_to_match.value, "query_string", null) != null ? [1] : []
 
                                   content {}
+                                }
+
+                                dynamic "ja3_fingerprint" {
+                                  for_each = lookup(field_to_match.value, "ja3_fingerprint", null) != null ? [field_to_match.value.ja3_fingerprint] : []
+
+                                  content {
+                                    fallback_behavior = ja3_fingerprint.value.fallback_behavior
+                                  }
+                                }
+
+                                dynamic "ja4_fingerprint" {
+                                  for_each = lookup(field_to_match.value, "ja4_fingerprint", null) != null ? [field_to_match.value.ja4_fingerprint] : []
+
+                                  content {
+                                    fallback_behavior = ja4_fingerprint.value.fallback_behavior
+                                  }
                                 }
 
                                 dynamic "single_header" {
@@ -4979,7 +5747,7 @@ resource "aws_wafv2_web_acl" "default" {
                           content {
                             dynamic "statement" {
                               iterator = nested_not_statement
-                              for_each = nested_statement.value.type != null && nested_statement.value.type == "not_byte_match_statement"  ? [1] : []
+                              for_each = nested_statement.value.type != null && nested_statement.value.type == "not_byte_match_statement" ? [1] : []
                               content {
 
                                 dynamic "byte_match_statement" {
@@ -5013,6 +5781,22 @@ resource "aws_wafv2_web_acl" "default" {
                                           for_each = lookup(field_to_match.value, "query_string", null) != null ? [1] : []
 
                                           content {}
+                                        }
+
+                                        dynamic "ja3_fingerprint" {
+                                          for_each = lookup(field_to_match.value, "ja3_fingerprint", null) != null ? [field_to_match.value.ja3_fingerprint] : []
+
+                                          content {
+                                            fallback_behavior = ja3_fingerprint.value.fallback_behavior
+                                          }
+                                        }
+
+                                        dynamic "ja4_fingerprint" {
+                                          for_each = lookup(field_to_match.value, "ja4_fingerprint", null) != null ? [field_to_match.value.ja4_fingerprint] : []
+
+                                          content {
+                                            fallback_behavior = ja4_fingerprint.value.fallback_behavior
+                                          }
                                         }
 
                                         dynamic "single_header" {
@@ -5053,7 +5837,7 @@ resource "aws_wafv2_web_acl" "default" {
                             }
                             dynamic "statement" {
                               iterator = nested_not_statement
-                              for_each = nested_statement.value.type != null && nested_statement.value.type == "not_label_match_statement"  ? [1] : []
+                              for_each = nested_statement.value.type != null && nested_statement.value.type == "not_label_match_statement" ? [1] : []
                               content {
                                 dynamic "label_match_statement" {
                                   for_each = nested_statement.value.type == "not_label_match_statement" ? [jsondecode(nested_statement.value.statement)] : []
@@ -5066,12 +5850,12 @@ resource "aws_wafv2_web_acl" "default" {
                             }
                             dynamic "statement" {
                               iterator = nested_not_statement
-                              for_each = nested_statement.value.type != null && nested_statement.value.type == "not_regex_pattern_set_reference_statement"  ? [1] : []
+                              for_each = nested_statement.value.type != null && nested_statement.value.type == "not_regex_pattern_set_reference_statement" ? [1] : []
                               content {
                                 dynamic "regex_pattern_set_reference_statement" {
                                   for_each = nested_statement.value.type == "not_regex_pattern_set_reference_statement" ? [jsondecode(nested_statement.value.statement)] : []
                                   content {
-                                    arn = regex_pattern_set_reference_statement.value.arn
+                                    arn = try(aws_wafv2_regex_pattern_set.default[local.regex_rule_to_reusable_regex_pattern_set[regex_pattern_set_reference_statement.value.set_name]], null) != null ? aws_wafv2_regex_pattern_set.default[local.regex_rule_to_reusable_regex_pattern_set[regex_pattern_set_reference_statement.value.set_name]].arn : (try(aws_wafv2_regex_pattern_set.default[local.regex_rule_to_regex_pattern_set[rule.key]], null) != null ? aws_wafv2_regex_pattern_set.default[local.regex_rule_to_regex_pattern_set[rule.key]].arn : try(regex_pattern_set_reference_statement.value.arnement.value.arn, null))
 
                                     dynamic "field_to_match" {
                                       for_each = regex_pattern_set_reference_statement.value.field_to_match != null ? [regex_pattern_set_reference_statement.value.field_to_match] : []
@@ -5098,6 +5882,22 @@ resource "aws_wafv2_web_acl" "default" {
                                           for_each = lookup(field_to_match.value, "query_string", null) != null ? [1] : []
 
                                           content {}
+                                        }
+
+                                        dynamic "ja3_fingerprint" {
+                                          for_each = lookup(field_to_match.value, "ja3_fingerprint", null) != null ? [field_to_match.value.ja3_fingerprint] : []
+
+                                          content {
+                                            fallback_behavior = ja3_fingerprint.value.fallback_behavior
+                                          }
+                                        }
+
+                                        dynamic "ja4_fingerprint" {
+                                          for_each = lookup(field_to_match.value, "ja4_fingerprint", null) != null ? [field_to_match.value.ja4_fingerprint] : []
+
+                                          content {
+                                            fallback_behavior = ja4_fingerprint.value.fallback_behavior
+                                          }
                                         }
 
                                         dynamic "single_header" {
@@ -5183,6 +5983,22 @@ resource "aws_wafv2_web_acl" "default" {
                                   content {}
                                 }
 
+                                dynamic "ja3_fingerprint" {
+                                  for_each = lookup(field_to_match.value, "ja3_fingerprint", null) != null ? [field_to_match.value.ja3_fingerprint] : []
+
+                                  content {
+                                    fallback_behavior = ja3_fingerprint.value.fallback_behavior
+                                  }
+                                }
+
+                                dynamic "ja4_fingerprint" {
+                                  for_each = lookup(field_to_match.value, "ja4_fingerprint", null) != null ? [field_to_match.value.ja4_fingerprint] : []
+
+                                  content {
+                                    fallback_behavior = ja4_fingerprint.value.fallback_behavior
+                                  }
+                                }
+
                                 dynamic "single_header" {
                                   for_each = lookup(field_to_match.value, "single_header", null) != null ? [field_to_match.value.single_header] : []
 
@@ -5220,7 +6036,7 @@ resource "aws_wafv2_web_acl" "default" {
                         dynamic "regex_pattern_set_reference_statement" {
                           for_each = nested_statement.value.type == "regex_pattern_set_reference_statement" ? [jsondecode(nested_statement.value.statement)] : []
                           content {
-                            arn = regex_pattern_set_reference_statement.value.arn
+                            arn = try(aws_wafv2_regex_pattern_set.default[local.regex_rule_to_reusable_regex_pattern_set[regex_pattern_set_reference_statement.value.set_name]], null) != null ? aws_wafv2_regex_pattern_set.default[local.regex_rule_to_reusable_regex_pattern_set[regex_pattern_set_reference_statement.value.set_name]].arn : (try(aws_wafv2_regex_pattern_set.default[local.regex_rule_to_regex_pattern_set[rule.key]], null) != null ? aws_wafv2_regex_pattern_set.default[local.regex_rule_to_regex_pattern_set[rule.key]].arn : try(regex_pattern_set_reference_statement.value.arnement.value.arn, null))
 
                             dynamic "field_to_match" {
                               for_each = regex_pattern_set_reference_statement.value.field_to_match != null ? [regex_pattern_set_reference_statement.value.field_to_match] : []
@@ -5247,6 +6063,22 @@ resource "aws_wafv2_web_acl" "default" {
                                   for_each = lookup(field_to_match.value, "query_string", null) != null ? [1] : []
 
                                   content {}
+                                }
+
+                                dynamic "ja3_fingerprint" {
+                                  for_each = lookup(field_to_match.value, "ja3_fingerprint", null) != null ? [field_to_match.value.ja3_fingerprint] : []
+
+                                  content {
+                                    fallback_behavior = ja3_fingerprint.value.fallback_behavior
+                                  }
+                                }
+
+                                dynamic "ja4_fingerprint" {
+                                  for_each = lookup(field_to_match.value, "ja4_fingerprint", null) != null ? [field_to_match.value.ja4_fingerprint] : []
+
+                                  content {
+                                    fallback_behavior = ja4_fingerprint.value.fallback_behavior
+                                  }
                                 }
 
                                 dynamic "single_header" {
@@ -5295,7 +6127,7 @@ resource "aws_wafv2_web_acl" "default" {
                           content {
                             dynamic "statement" {
                               iterator = nested_not_statement
-                              for_each = nested_statement.value.type != null && nested_statement.value.type == "not_byte_match_statement"  ? [1] : []
+                              for_each = nested_statement.value.type != null && nested_statement.value.type == "not_byte_match_statement" ? [1] : []
                               content {
 
                                 dynamic "byte_match_statement" {
@@ -5329,6 +6161,22 @@ resource "aws_wafv2_web_acl" "default" {
                                           for_each = lookup(field_to_match.value, "query_string", null) != null ? [1] : []
 
                                           content {}
+                                        }
+
+                                        dynamic "ja3_fingerprint" {
+                                          for_each = lookup(field_to_match.value, "ja3_fingerprint", null) != null ? [field_to_match.value.ja3_fingerprint] : []
+
+                                          content {
+                                            fallback_behavior = ja3_fingerprint.value.fallback_behavior
+                                          }
+                                        }
+
+                                        dynamic "ja4_fingerprint" {
+                                          for_each = lookup(field_to_match.value, "ja4_fingerprint", null) != null ? [field_to_match.value.ja4_fingerprint] : []
+
+                                          content {
+                                            fallback_behavior = ja4_fingerprint.value.fallback_behavior
+                                          }
                                         }
 
                                         dynamic "single_header" {
@@ -5369,7 +6217,7 @@ resource "aws_wafv2_web_acl" "default" {
                             }
                             dynamic "statement" {
                               iterator = nested_not_statement
-                              for_each = nested_statement.value.type != null && nested_statement.value.type == "not_label_match_statement"  ? [1] : []
+                              for_each = nested_statement.value.type != null && nested_statement.value.type == "not_label_match_statement" ? [1] : []
                               content {
                                 dynamic "label_match_statement" {
                                   for_each = nested_statement.value.type == "not_label_match_statement" ? [jsondecode(nested_statement.value.statement)] : []
@@ -5382,12 +6230,12 @@ resource "aws_wafv2_web_acl" "default" {
                             }
                             dynamic "statement" {
                               iterator = nested_not_statement
-                              for_each = nested_statement.value.type != null && nested_statement.value.type == "not_regex_pattern_set_reference_statement"  ? [1] : []
+                              for_each = nested_statement.value.type != null && nested_statement.value.type == "not_regex_pattern_set_reference_statement" ? [1] : []
                               content {
                                 dynamic "regex_pattern_set_reference_statement" {
                                   for_each = nested_statement.value.type == "not_regex_pattern_set_reference_statement" ? [jsondecode(nested_statement.value.statement)] : []
                                   content {
-                                    arn = regex_pattern_set_reference_statement.value.arn
+                                    arn = try(aws_wafv2_regex_pattern_set.default[local.regex_rule_to_reusable_regex_pattern_set[regex_pattern_set_reference_statement.value.set_name]], null) != null ? aws_wafv2_regex_pattern_set.default[local.regex_rule_to_reusable_regex_pattern_set[regex_pattern_set_reference_statement.value.set_name]].arn : (try(aws_wafv2_regex_pattern_set.default[local.regex_rule_to_regex_pattern_set[rule.key]], null) != null ? aws_wafv2_regex_pattern_set.default[local.regex_rule_to_regex_pattern_set[rule.key]].arn : try(regex_pattern_set_reference_statement.value.arnement.value.arn, null))
 
                                     dynamic "field_to_match" {
                                       for_each = regex_pattern_set_reference_statement.value.field_to_match != null ? [regex_pattern_set_reference_statement.value.field_to_match] : []
@@ -5414,6 +6262,22 @@ resource "aws_wafv2_web_acl" "default" {
                                           for_each = lookup(field_to_match.value, "query_string", null) != null ? [1] : []
 
                                           content {}
+                                        }
+
+                                        dynamic "ja3_fingerprint" {
+                                          for_each = lookup(field_to_match.value, "ja3_fingerprint", null) != null ? [field_to_match.value.ja3_fingerprint] : []
+
+                                          content {
+                                            fallback_behavior = ja3_fingerprint.value.fallback_behavior
+                                          }
+                                        }
+
+                                        dynamic "ja4_fingerprint" {
+                                          for_each = lookup(field_to_match.value, "ja4_fingerprint", null) != null ? [field_to_match.value.ja4_fingerprint] : []
+
+                                          content {
+                                            fallback_behavior = ja4_fingerprint.value.fallback_behavior
+                                          }
                                         }
 
                                         dynamic "single_header" {
@@ -5553,6 +6417,22 @@ resource "aws_wafv2_web_acl" "default" {
                   content {}
                 }
 
+                dynamic "ja3_fingerprint" {
+                  for_each = lookup(field_to_match.value, "ja3_fingerprint", null) != null ? [field_to_match.value.ja3_fingerprint] : []
+
+                  content {
+                    fallback_behavior = ja3_fingerprint.value.fallback_behavior
+                  }
+                }
+
+                dynamic "ja4_fingerprint" {
+                  for_each = lookup(field_to_match.value, "ja4_fingerprint", null) != null ? [field_to_match.value.ja4_fingerprint] : []
+
+                  content {
+                    fallback_behavior = ja4_fingerprint.value.fallback_behavior
+                  }
+                }
+
                 dynamic "single_header" {
                   for_each = lookup(field_to_match.value, "single_header", null) != null ? [field_to_match.value.single_header] : []
 
@@ -5673,7 +6553,7 @@ resource "aws_wafv2_web_acl" "default" {
                 dynamic "regex_pattern_set_reference_statement" {
                   for_each = statement.value.regex_pattern_set_reference_statement != null ? [statement.value.regex_pattern_set_reference_statement] : []
                   content {
-                    arn = regex_pattern_set_reference_statement.value.arn
+                    arn = try(aws_wafv2_regex_pattern_set.default[local.regex_rule_to_reusable_regex_pattern_set[regex_pattern_set_reference_statement.value.set_name]], null) != null ? aws_wafv2_regex_pattern_set.default[local.regex_rule_to_reusable_regex_pattern_set[regex_pattern_set_reference_statement.value.set_name]].arn : (try(aws_wafv2_regex_pattern_set.default[local.regex_rule_to_regex_pattern_set[rule.key]], null) != null ? aws_wafv2_regex_pattern_set.default[local.regex_rule_to_regex_pattern_set[rule.key]].arn : try(regex_pattern_set_reference_statement.value.arnement.value.arn, null))
 
                     dynamic "field_to_match" {
                       for_each = regex_pattern_set_reference_statement.value.field_to_match != null ? [regex_pattern_set_reference_statement.value.field_to_match] : []
@@ -5700,6 +6580,22 @@ resource "aws_wafv2_web_acl" "default" {
                           for_each = lookup(field_to_match.value, "query_string", null) != null ? [1] : []
 
                           content {}
+                        }
+
+                        dynamic "ja3_fingerprint" {
+                          for_each = lookup(field_to_match.value, "ja3_fingerprint", null) != null ? [field_to_match.value.ja3_fingerprint] : []
+
+                          content {
+                            fallback_behavior = ja3_fingerprint.value.fallback_behavior
+                          }
+                        }
+
+                        dynamic "ja4_fingerprint" {
+                          for_each = lookup(field_to_match.value, "ja4_fingerprint", null) != null ? [field_to_match.value.ja4_fingerprint] : []
+
+                          content {
+                            fallback_behavior = ja4_fingerprint.value.fallback_behavior
+                          }
                         }
 
                         dynamic "single_header" {
@@ -5777,6 +6673,22 @@ resource "aws_wafv2_web_acl" "default" {
                           content {}
                         }
 
+                        dynamic "ja3_fingerprint" {
+                          for_each = lookup(field_to_match.value, "ja3_fingerprint", null) != null ? [field_to_match.value.ja3_fingerprint] : []
+
+                          content {
+                            fallback_behavior = ja3_fingerprint.value.fallback_behavior
+                          }
+                        }
+
+                        dynamic "ja4_fingerprint" {
+                          for_each = lookup(field_to_match.value, "ja4_fingerprint", null) != null ? [field_to_match.value.ja4_fingerprint] : []
+
+                          content {
+                            fallback_behavior = ja4_fingerprint.value.fallback_behavior
+                          }
+                        }
+
                         dynamic "single_header" {
                           for_each = lookup(field_to_match.value, "single_header", null) != null ? [field_to_match.value.single_header] : []
 
@@ -5851,6 +6763,22 @@ resource "aws_wafv2_web_acl" "default" {
                                   content {}
                                 }
 
+                                dynamic "ja3_fingerprint" {
+                                  for_each = lookup(field_to_match.value, "ja3_fingerprint", null) != null ? [field_to_match.value.ja3_fingerprint] : []
+
+                                  content {
+                                    fallback_behavior = ja3_fingerprint.value.fallback_behavior
+                                  }
+                                }
+
+                                dynamic "ja4_fingerprint" {
+                                  for_each = lookup(field_to_match.value, "ja4_fingerprint", null) != null ? [field_to_match.value.ja4_fingerprint] : []
+
+                                  content {
+                                    fallback_behavior = ja4_fingerprint.value.fallback_behavior
+                                  }
+                                }
+
                                 dynamic "single_header" {
                                   for_each = lookup(field_to_match.value, "single_header", null) != null ? [field_to_match.value.single_header] : []
 
@@ -5905,7 +6833,7 @@ resource "aws_wafv2_web_acl" "default" {
                         dynamic "regex_pattern_set_reference_statement" {
                           for_each = statement.value.not_regex_pattern_set_reference_statement != null ? [statement.value.not_regex_pattern_set_reference_statement] : []
                           content {
-                            arn = regex_pattern_set_reference_statement.value.arn
+                            arn = try(aws_wafv2_regex_pattern_set.default[local.regex_rule_to_reusable_regex_pattern_set[regex_pattern_set_reference_statement.value.set_name]], null) != null ? aws_wafv2_regex_pattern_set.default[local.regex_rule_to_reusable_regex_pattern_set[regex_pattern_set_reference_statement.value.set_name]].arn : (try(aws_wafv2_regex_pattern_set.default[local.regex_rule_to_regex_pattern_set[rule.key]], null) != null ? aws_wafv2_regex_pattern_set.default[local.regex_rule_to_regex_pattern_set[rule.key]].arn : try(regex_pattern_set_reference_statement.value.arnement.value.arn, null))
 
                             dynamic "field_to_match" {
                               for_each = regex_pattern_set_reference_statement.value.field_to_match != null ? [regex_pattern_set_reference_statement.value.field_to_match] : []
@@ -5932,6 +6860,22 @@ resource "aws_wafv2_web_acl" "default" {
                                   for_each = lookup(field_to_match.value, "query_string", null) != null ? [1] : []
 
                                   content {}
+                                }
+
+                                dynamic "ja3_fingerprint" {
+                                  for_each = lookup(field_to_match.value, "ja3_fingerprint", null) != null ? [field_to_match.value.ja3_fingerprint] : []
+
+                                  content {
+                                    fallback_behavior = ja3_fingerprint.value.fallback_behavior
+                                  }
+                                }
+
+                                dynamic "ja4_fingerprint" {
+                                  for_each = lookup(field_to_match.value, "ja4_fingerprint", null) != null ? [field_to_match.value.ja4_fingerprint] : []
+
+                                  content {
+                                    fallback_behavior = ja4_fingerprint.value.fallback_behavior
+                                  }
                                 }
 
                                 dynamic "single_header" {
@@ -5985,7 +6929,7 @@ resource "aws_wafv2_web_acl" "default" {
                 dynamic "regex_pattern_set_reference_statement" {
                   for_each = statement.value.regex_pattern_set_reference_statement != null ? [statement.value.regex_pattern_set_reference_statement] : []
                   content {
-                    arn = regex_pattern_set_reference_statement.value.arn
+                    arn = try(aws_wafv2_regex_pattern_set.default[local.regex_rule_to_reusable_regex_pattern_set[regex_pattern_set_reference_statement.value.set_name]], null) != null ? aws_wafv2_regex_pattern_set.default[local.regex_rule_to_reusable_regex_pattern_set[regex_pattern_set_reference_statement.value.set_name]].arn : (try(aws_wafv2_regex_pattern_set.default[local.regex_rule_to_regex_pattern_set[rule.key]], null) != null ? aws_wafv2_regex_pattern_set.default[local.regex_rule_to_regex_pattern_set[rule.key]].arn : try(regex_pattern_set_reference_statement.value.arnement.value.arn, null))
 
                     dynamic "field_to_match" {
                       for_each = regex_pattern_set_reference_statement.value.field_to_match != null ? [regex_pattern_set_reference_statement.value.field_to_match] : []
@@ -6012,6 +6956,22 @@ resource "aws_wafv2_web_acl" "default" {
                           for_each = lookup(field_to_match.value, "query_string", null) != null ? [1] : []
 
                           content {}
+                        }
+
+                        dynamic "ja3_fingerprint" {
+                          for_each = lookup(field_to_match.value, "ja3_fingerprint", null) != null ? [field_to_match.value.ja3_fingerprint] : []
+
+                          content {
+                            fallback_behavior = ja3_fingerprint.value.fallback_behavior
+                          }
+                        }
+
+                        dynamic "ja4_fingerprint" {
+                          for_each = lookup(field_to_match.value, "ja4_fingerprint", null) != null ? [field_to_match.value.ja4_fingerprint] : []
+
+                          content {
+                            fallback_behavior = ja4_fingerprint.value.fallback_behavior
+                          }
                         }
 
                         dynamic "single_header" {
@@ -6089,6 +7049,22 @@ resource "aws_wafv2_web_acl" "default" {
                           content {}
                         }
 
+                        dynamic "ja3_fingerprint" {
+                          for_each = lookup(field_to_match.value, "ja3_fingerprint", null) != null ? [field_to_match.value.ja3_fingerprint] : []
+
+                          content {
+                            fallback_behavior = ja3_fingerprint.value.fallback_behavior
+                          }
+                        }
+
+                        dynamic "ja4_fingerprint" {
+                          for_each = lookup(field_to_match.value, "ja4_fingerprint", null) != null ? [field_to_match.value.ja4_fingerprint] : []
+
+                          content {
+                            fallback_behavior = ja4_fingerprint.value.fallback_behavior
+                          }
+                        }
+
                         dynamic "single_header" {
                           for_each = lookup(field_to_match.value, "single_header", null) != null ? [field_to_match.value.single_header] : []
 
@@ -6163,6 +7139,22 @@ resource "aws_wafv2_web_acl" "default" {
                                   content {}
                                 }
 
+                                dynamic "ja3_fingerprint" {
+                                  for_each = lookup(field_to_match.value, "ja3_fingerprint", null) != null ? [field_to_match.value.ja3_fingerprint] : []
+
+                                  content {
+                                    fallback_behavior = ja3_fingerprint.value.fallback_behavior
+                                  }
+                                }
+
+                                dynamic "ja4_fingerprint" {
+                                  for_each = lookup(field_to_match.value, "ja4_fingerprint", null) != null ? [field_to_match.value.ja4_fingerprint] : []
+
+                                  content {
+                                    fallback_behavior = ja4_fingerprint.value.fallback_behavior
+                                  }
+                                }
+
                                 dynamic "single_header" {
                                   for_each = lookup(field_to_match.value, "single_header", null) != null ? [field_to_match.value.single_header] : []
 
@@ -6217,7 +7209,7 @@ resource "aws_wafv2_web_acl" "default" {
                         dynamic "regex_pattern_set_reference_statement" {
                           for_each = statement.value.not_regex_pattern_set_reference_statement != null ? [statement.value.not_regex_pattern_set_reference_statement] : []
                           content {
-                            arn = regex_pattern_set_reference_statement.value.arn
+                            arn = try(aws_wafv2_regex_pattern_set.default[local.regex_rule_to_reusable_regex_pattern_set[regex_pattern_set_reference_statement.value.set_name]], null) != null ? aws_wafv2_regex_pattern_set.default[local.regex_rule_to_reusable_regex_pattern_set[regex_pattern_set_reference_statement.value.set_name]].arn : (try(aws_wafv2_regex_pattern_set.default[local.regex_rule_to_regex_pattern_set[rule.key]], null) != null ? aws_wafv2_regex_pattern_set.default[local.regex_rule_to_regex_pattern_set[rule.key]].arn : try(regex_pattern_set_reference_statement.value.arnement.value.arn, null))
 
                             dynamic "field_to_match" {
                               for_each = regex_pattern_set_reference_statement.value.field_to_match != null ? [regex_pattern_set_reference_statement.value.field_to_match] : []
@@ -6244,6 +7236,22 @@ resource "aws_wafv2_web_acl" "default" {
                                   for_each = lookup(field_to_match.value, "query_string", null) != null ? [1] : []
 
                                   content {}
+                                }
+
+                                dynamic "ja3_fingerprint" {
+                                  for_each = lookup(field_to_match.value, "ja3_fingerprint", null) != null ? [field_to_match.value.ja3_fingerprint] : []
+
+                                  content {
+                                    fallback_behavior = ja3_fingerprint.value.fallback_behavior
+                                  }
+                                }
+
+                                dynamic "ja4_fingerprint" {
+                                  for_each = lookup(field_to_match.value, "ja4_fingerprint", null) != null ? [field_to_match.value.ja4_fingerprint] : []
+
+                                  content {
+                                    fallback_behavior = ja4_fingerprint.value.fallback_behavior
+                                  }
                                 }
 
                                 dynamic "single_header" {

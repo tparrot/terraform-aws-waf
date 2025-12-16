@@ -103,6 +103,8 @@ locals {
           for stmt in try(rule.statement.and_statement.statements, []) : {
             label_match_statement                     = stmt.type == "label_match_statement" ? try(jsondecode(stmt.statement), null) : null
             not_label_match_statement                 = stmt.type == "not_label_match_statement" ? try(jsondecode(stmt.statement), null) : null
+            size_constraint_statement                 = stmt.type == "size_constraint_statement" ? try(jsondecode(stmt.statement), null) : null
+            not_size_constraint_statement             = stmt.type == "not_size_constraint_statement" ? try(jsondecode(stmt.statement), null) : null
             byte_match_statement                      = stmt.type == "byte_match_statement" ? try(jsondecode(stmt.statement), null) : null
             not_byte_match_statement                  = stmt.type == "not_byte_match_statement" ? try(jsondecode(stmt.statement), null) : null
             regex_pattern_set_reference_statement     = stmt.type == "regex_pattern_set_reference_statement" ? try(jsondecode(stmt.statement), null) : null
@@ -116,6 +118,8 @@ locals {
           for stmt in try(rule.statement.or_statement.statements, []) : {
             label_match_statement                     = stmt.type == "label_match_statement" ? try(jsondecode(stmt.statement), null) : null
             not_label_match_statement                 = stmt.type == "not_label_match_statement" ? try(jsondecode(stmt.statement), null) : null
+            size_constraint_statement                 = stmt.type == "size_constraint_statement" ? try(jsondecode(stmt.statement), null) : null
+            not_size_constraint_statement             = stmt.type == "not_size_constraint_statement" ? try(jsondecode(stmt.statement), null) : null
             byte_match_statement                      = stmt.type == "byte_match_statement" ? try(jsondecode(stmt.statement), null) : null
             not_byte_match_statement                  = stmt.type == "not_byte_match_statement" ? try(jsondecode(stmt.statement), null) : null
             regex_pattern_set_reference_statement     = stmt.type == "regex_pattern_set_reference_statement" ? try(jsondecode(stmt.statement), null) : null
@@ -916,7 +920,7 @@ resource "aws_wafv2_web_acl" "default" {
                 dynamic "regex_pattern_set_reference_statement" {
                   for_each = scope_down_statement.value.regex_pattern_set_reference_statement != null ? [scope_down_statement.value.regex_pattern_set_reference_statement] : []
                   content {
-                    arn = try(aws_wafv2_regex_pattern_set.default[local.regex_rule_to_reusable_regex_pattern_set[regex_pattern_set_reference_statement.value.set_name]], null) != null ? aws_wafv2_regex_pattern_set.default[local.regex_rule_to_reusable_regex_pattern_set[regex_pattern_set_reference_statement.value.set_name]].arn : (try(aws_wafv2_regex_pattern_set.default[local.regex_rule_to_regex_pattern_set[rule.key]], null) != null ? aws_wafv2_regex_pattern_set.default[local.regex_rule_to_regex_pattern_set[rule.key]].arn : try(regex_pattern_set_reference_statement.value.arnement.value.arn, null))
+                    arn = try(aws_wafv2_regex_pattern_set.default[local.regex_rule_to_reusable_regex_pattern_set[regex_pattern_set_reference_statement.value.set_name]], null) != null ? aws_wafv2_regex_pattern_set.default[local.regex_rule_to_reusable_regex_pattern_set[regex_pattern_set_reference_statement.value.set_name]].arn : (try(aws_wafv2_regex_pattern_set.default[local.regex_rule_to_regex_pattern_set[rule.key]], null) != null ? aws_wafv2_regex_pattern_set.default[local.regex_rule_to_regex_pattern_set[rule.key]].arn : try(regex_pattern_set_reference_statement.value.arn, null))
 
                     dynamic "field_to_match" {
                       for_each = regex_pattern_set_reference_statement.value.field_to_match != null ? [regex_pattern_set_reference_statement.value.field_to_match] : []
@@ -1000,6 +1004,80 @@ resource "aws_wafv2_web_acl" "default" {
                   content {
                     scope = label_match_statement.value.scope
                     key   = label_match_statement.value.key
+                  }
+                }
+                dynamic "size_constraint_statement" {
+                  for_each = scope_down_statement.value.size_constraint_statement != null ? [scope_down_statement.value.size_constraint_statement] : []
+                  content {
+                    comparison_operator = size_constraint_statement.value.comparison_operator
+                    size                = size_constraint_statement.value.size
+
+                    dynamic "field_to_match" {
+                      for_each = size_constraint_statement.value.field_to_match != null ? [size_constraint_statement.value.field_to_match] : []
+
+                      content {
+                        dynamic "all_query_arguments" {
+                          for_each = lookup(field_to_match.value, "all_query_arguments", null) != null ? [1] : []
+
+                          content {}
+                        }
+
+                        dynamic "body" {
+                          for_each = lookup(field_to_match.value, "body", null) != null ? [1] : []
+
+                          content {
+                            # Oversize handling tells AWS WAF what to do with a web request when the request component that the rule inspects is over the limits.
+                            # WAF does not support inspecting the entire contents of the body of a web request when the body exceeds 8 KB (8192 bytes).
+                            # Only the first 8 KB of the request body are forwarded to WAF by the underlying host service
+                            # Valid values include the following: CONTINUE, MATCH, NO_MATCH
+                            oversize_handling = try(field_to_match.value.body.oversize_handling, "CONTINUE")
+                          }
+                        }
+
+                        dynamic "method" {
+                          for_each = lookup(field_to_match.value, "method", null) != null ? [1] : []
+
+                          content {}
+                        }
+
+                        dynamic "query_string" {
+                          for_each = lookup(field_to_match.value, "query_string", null) != null ? [1] : []
+
+                          content {}
+                        }
+
+                        dynamic "single_header" {
+                          for_each = lookup(field_to_match.value, "single_header", null) != null ? [field_to_match.value.single_header] : []
+
+                          content {
+                            name = single_header.value.name
+                          }
+                        }
+
+                        dynamic "single_query_argument" {
+                          for_each = lookup(field_to_match.value, "single_query_argument", null) != null ? [field_to_match.value.single_query_argument] : []
+
+                          content {
+                            name = single_query_argument.value.name
+                          }
+                        }
+
+                        dynamic "uri_path" {
+                          for_each = lookup(field_to_match.value, "uri_path", null) != null ? [1] : []
+
+                          content {}
+                        }
+                      }
+                    }
+
+                    dynamic "text_transformation" {
+                      for_each = size_constraint_statement.value.text_transformation != null ? size_constraint_statement.value.text_transformation : []
+
+                      content {
+                        priority = text_transformation.value.priority
+                        type     = text_transformation.value.type
+                      }
+                    }
                   }
                 }
                 dynamic "byte_match_statement" {
@@ -1087,8 +1165,87 @@ resource "aws_wafv2_web_acl" "default" {
                   }
                 }
                 dynamic "not_statement" {
-                  for_each = scope_down_statement.value.not_byte_match_statement != null || scope_down_statement.value.not_label_match_statement != null || scope_down_statement.value.not_regex_pattern_set_reference_statement != null ? [1] : []
+                  for_each = scope_down_statement.value.not_byte_match_statement != null || scope_down_statement.value.not_label_match_statement != null || scope_down_statement.value.not_regex_pattern_set_reference_statement != null || scope_down_statement.value.not_size_constraint_statement != null ? [1] : []
                   content {
+                    dynamic "statement" {
+                      for_each = scope_down_statement.value.not_size_constraint_statement != null ? [1] : []
+                      content {
+                        dynamic "size_constraint_statement" {
+                          for_each = scope_down_statement.value.not_size_constraint_statement != null ? [scope_down_statement.value.not_size_constraint_statement] : []
+                          content {
+                            comparison_operator = size_constraint_statement.value.comparison_operator
+                            size                = size_constraint_statement.value.size
+
+                            dynamic "field_to_match" {
+                              for_each = size_constraint_statement.value.field_to_match != null ? [size_constraint_statement.value.field_to_match] : []
+
+                              content {
+                                dynamic "all_query_arguments" {
+                                  for_each = lookup(field_to_match.value, "all_query_arguments", null) != null ? [1] : []
+
+                                  content {}
+                                }
+
+                                dynamic "body" {
+                                  for_each = lookup(field_to_match.value, "body", null) != null ? [1] : []
+
+                                  content {
+                                    # Oversize handling tells AWS WAF what to do with a web request when the request component that the rule inspects is over the limits.
+                                    # WAF does not support inspecting the entire contents of the body of a web request when the body exceeds 8 KB (8192 bytes).
+                                    # Only the first 8 KB of the request body are forwarded to WAF by the underlying host service
+                                    # Valid values include the following: CONTINUE, MATCH, NO_MATCH
+                                    oversize_handling = try(field_to_match.value.body.oversize_handling, "CONTINUE")
+                                  }
+                                }
+
+                                dynamic "method" {
+                                  for_each = lookup(field_to_match.value, "method", null) != null ? [1] : []
+
+                                  content {}
+                                }
+
+                                dynamic "query_string" {
+                                  for_each = lookup(field_to_match.value, "query_string", null) != null ? [1] : []
+
+                                  content {}
+                                }
+
+                                dynamic "single_header" {
+                                  for_each = lookup(field_to_match.value, "single_header", null) != null ? [field_to_match.value.single_header] : []
+
+                                  content {
+                                    name = single_header.value.name
+                                  }
+                                }
+
+                                dynamic "single_query_argument" {
+                                  for_each = lookup(field_to_match.value, "single_query_argument", null) != null ? [field_to_match.value.single_query_argument] : []
+
+                                  content {
+                                    name = single_query_argument.value.name
+                                  }
+                                }
+
+                                dynamic "uri_path" {
+                                  for_each = lookup(field_to_match.value, "uri_path", null) != null ? [1] : []
+
+                                  content {}
+                                }
+                              }
+                            }
+
+                            dynamic "text_transformation" {
+                              for_each = size_constraint_statement.value.text_transformation != null ? size_constraint_statement.value.text_transformation : []
+
+                              content {
+                                priority = text_transformation.value.priority
+                                type     = text_transformation.value.type
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
                     dynamic "statement" {
                       for_each = scope_down_statement.value.not_byte_match_statement != null ? [1] : []
                       content {
@@ -1195,7 +1352,7 @@ resource "aws_wafv2_web_acl" "default" {
                         dynamic "regex_pattern_set_reference_statement" {
                           for_each = statement.value.not_regex_pattern_set_reference_statement != null ? [statement.value.not_regex_pattern_set_reference_statement] : []
                           content {
-                            arn = try(aws_wafv2_regex_pattern_set.default[local.regex_rule_to_reusable_regex_pattern_set[regex_pattern_set_reference_statement.value.set_name]], null) != null ? aws_wafv2_regex_pattern_set.default[local.regex_rule_to_reusable_regex_pattern_set[regex_pattern_set_reference_statement.value.set_name]].arn : (try(aws_wafv2_regex_pattern_set.default[local.regex_rule_to_regex_pattern_set[rule.key]], null) != null ? aws_wafv2_regex_pattern_set.default[local.regex_rule_to_regex_pattern_set[rule.key]].arn : try(regex_pattern_set_reference_statement.value.arnement.value.arn, null))
+                            arn = try(aws_wafv2_regex_pattern_set.default[local.regex_rule_to_reusable_regex_pattern_set[regex_pattern_set_reference_statement.value.set_name]], null) != null ? aws_wafv2_regex_pattern_set.default[local.regex_rule_to_reusable_regex_pattern_set[regex_pattern_set_reference_statement.value.set_name]].arn : (try(aws_wafv2_regex_pattern_set.default[local.regex_rule_to_regex_pattern_set[rule.key]], null) != null ? aws_wafv2_regex_pattern_set.default[local.regex_rule_to_regex_pattern_set[rule.key]].arn : try(regex_pattern_set_reference_statement.value.arn, null))
 
                             dynamic "field_to_match" {
                               for_each = regex_pattern_set_reference_statement.value.field_to_match != null ? [regex_pattern_set_reference_statement.value.field_to_match] : []
@@ -1286,6 +1443,80 @@ resource "aws_wafv2_web_acl" "default" {
                       iterator = nested_statement
                       for_each = and_statement.value.statements
                       content {
+                        dynamic "size_constraint_statement" {
+                          for_each = nested_statement.value.type == "size_constraint_statement" ? [jsondecode(nested_statement.value.statement)] : []
+                          content {
+                            comparison_operator = size_constraint_statement.value.comparison_operator
+                            size                = size_constraint_statement.value.size
+
+                            dynamic "field_to_match" {
+                              for_each = size_constraint_statement.value.field_to_match != null ? [size_constraint_statement.value.field_to_match] : []
+
+                              content {
+                                dynamic "all_query_arguments" {
+                                  for_each = lookup(field_to_match.value, "all_query_arguments", null) != null ? [1] : []
+
+                                  content {}
+                                }
+
+                                dynamic "body" {
+                                  for_each = lookup(field_to_match.value, "body", null) != null ? [1] : []
+
+                                  content {
+                                    # Oversize handling tells AWS WAF what to do with a web request when the request component that the rule inspects is over the limits.
+                                    # WAF does not support inspecting the entire contents of the body of a web request when the body exceeds 8 KB (8192 bytes).
+                                    # Only the first 8 KB of the request body are forwarded to WAF by the underlying host service
+                                    # Valid values include the following: CONTINUE, MATCH, NO_MATCH
+                                    oversize_handling = try(field_to_match.value.body.oversize_handling, "CONTINUE")
+                                  }
+                                }
+
+                                dynamic "method" {
+                                  for_each = lookup(field_to_match.value, "method", null) != null ? [1] : []
+
+                                  content {}
+                                }
+
+                                dynamic "query_string" {
+                                  for_each = lookup(field_to_match.value, "query_string", null) != null ? [1] : []
+
+                                  content {}
+                                }
+
+                                dynamic "single_header" {
+                                  for_each = lookup(field_to_match.value, "single_header", null) != null ? [field_to_match.value.single_header] : []
+
+                                  content {
+                                    name = single_header.value.name
+                                  }
+                                }
+
+                                dynamic "single_query_argument" {
+                                  for_each = lookup(field_to_match.value, "single_query_argument", null) != null ? [field_to_match.value.single_query_argument] : []
+
+                                  content {
+                                    name = single_query_argument.value.name
+                                  }
+                                }
+
+                                dynamic "uri_path" {
+                                  for_each = lookup(field_to_match.value, "uri_path", null) != null ? [1] : []
+
+                                  content {}
+                                }
+                              }
+                            }
+
+                            dynamic "text_transformation" {
+                              for_each = size_constraint_statement.value.text_transformation != null ? size_constraint_statement.value.text_transformation : []
+
+                              content {
+                                priority = text_transformation.value.priority
+                                type     = text_transformation.value.type
+                              }
+                            }
+                          }
+                        }
                         dynamic "byte_match_statement" {
                           for_each = nested_statement.value.type == "byte_match_statement" ? [jsondecode(nested_statement.value.statement)] : []
                           content {
@@ -1318,22 +1549,6 @@ resource "aws_wafv2_web_acl" "default" {
                                   for_each = lookup(field_to_match.value, "query_string", null) != null ? [1] : []
 
                                   content {}
-                                }
-
-                                dynamic "ja3_fingerprint" {
-                                  for_each = lookup(field_to_match.value, "ja3_fingerprint", null) != null ? [field_to_match.value.ja3_fingerprint] : []
-
-                                  content {
-                                    fallback_behavior = ja3_fingerprint.value.fallback_behavior
-                                  }
-                                }
-
-                                dynamic "ja4_fingerprint" {
-                                  for_each = lookup(field_to_match.value, "ja4_fingerprint", null) != null ? [field_to_match.value.ja4_fingerprint] : []
-
-                                  content {
-                                    fallback_behavior = ja4_fingerprint.value.fallback_behavior
-                                  }
                                 }
 
                                 dynamic "ja3_fingerprint" {
@@ -1389,7 +1604,7 @@ resource "aws_wafv2_web_acl" "default" {
                         dynamic "regex_pattern_set_reference_statement" {
                           for_each = nested_statement.value.type == "regex_pattern_set_reference_statement" ? [jsondecode(nested_statement.value.statement)] : []
                           content {
-                            arn = try(aws_wafv2_regex_pattern_set.default[local.regex_rule_to_reusable_regex_pattern_set[regex_pattern_set_reference_statement.value.set_name]], null) != null ? aws_wafv2_regex_pattern_set.default[local.regex_rule_to_reusable_regex_pattern_set[regex_pattern_set_reference_statement.value.set_name]].arn : (try(aws_wafv2_regex_pattern_set.default[local.regex_rule_to_regex_pattern_set[rule.key]], null) != null ? aws_wafv2_regex_pattern_set.default[local.regex_rule_to_regex_pattern_set[rule.key]].arn : try(regex_pattern_set_reference_statement.value.arnement.value.arn, null))
+                            arn = try(aws_wafv2_regex_pattern_set.default[local.regex_rule_to_reusable_regex_pattern_set[regex_pattern_set_reference_statement.value.set_name]], null) != null ? aws_wafv2_regex_pattern_set.default[local.regex_rule_to_reusable_regex_pattern_set[regex_pattern_set_reference_statement.value.set_name]].arn : (try(aws_wafv2_regex_pattern_set.default[local.regex_rule_to_regex_pattern_set[rule.key]], null) != null ? aws_wafv2_regex_pattern_set.default[local.regex_rule_to_regex_pattern_set[rule.key]].arn : try(regex_pattern_set_reference_statement.value.arn, null))
 
                             dynamic "field_to_match" {
                               for_each = regex_pattern_set_reference_statement.value.field_to_match != null ? [regex_pattern_set_reference_statement.value.field_to_match] : []
@@ -1476,8 +1691,88 @@ resource "aws_wafv2_web_acl" "default" {
                           }
                         }
                         dynamic "not_statement" {
-                          for_each = nested_statement.value.type == "not_byte_match_statement" || nested_statement.value.type == "not_label_match_statement" || nested_statement.value.type == "not_regex_pattern_set_reference_statement" ? [1] : []
+                          for_each = nested_statement.value.type == "not_byte_match_statement" || nested_statement.value.type == "not_label_match_statement" || nested_statement.value.type == "not_regex_pattern_set_reference_statement" || nested_statement.value.type == "not_size_constraint_statement" ? [1] : []
                           content {
+                            dynamic "statement" {
+                              iterator = nested_not_statement
+                              for_each = nested_statement.value.type != null && nested_statement.value.type == "not_size_constraint_statement" ? [1] : []
+                              content {
+                                dynamic "size_constraint_statement" {
+                                  for_each = nested_statement.value.type == "not_size_constraint_statement" ? [jsondecode(nested_statement.value.statement)] : []
+                                  content {
+                                    comparison_operator = size_constraint_statement.value.comparison_operator
+                                    size                = size_constraint_statement.value.size
+
+                                    dynamic "field_to_match" {
+                                      for_each = size_constraint_statement.value.field_to_match != null ? [size_constraint_statement.value.field_to_match] : []
+
+                                      content {
+                                        dynamic "all_query_arguments" {
+                                          for_each = lookup(field_to_match.value, "all_query_arguments", null) != null ? [1] : []
+
+                                          content {}
+                                        }
+
+                                        dynamic "body" {
+                                          for_each = lookup(field_to_match.value, "body", null) != null ? [1] : []
+
+                                          content {
+                                            # Oversize handling tells AWS WAF what to do with a web request when the request component that the rule inspects is over the limits.
+                                            # WAF does not support inspecting the entire contents of the body of a web request when the body exceeds 8 KB (8192 bytes).
+                                            # Only the first 8 KB of the request body are forwarded to WAF by the underlying host service
+                                            # Valid values include the following: CONTINUE, MATCH, NO_MATCH
+                                            oversize_handling = try(field_to_match.value.body.oversize_handling, "CONTINUE")
+                                          }
+                                        }
+
+                                        dynamic "method" {
+                                          for_each = lookup(field_to_match.value, "method", null) != null ? [1] : []
+
+                                          content {}
+                                        }
+
+                                        dynamic "query_string" {
+                                          for_each = lookup(field_to_match.value, "query_string", null) != null ? [1] : []
+
+                                          content {}
+                                        }
+
+                                        dynamic "single_header" {
+                                          for_each = lookup(field_to_match.value, "single_header", null) != null ? [field_to_match.value.single_header] : []
+
+                                          content {
+                                            name = single_header.value.name
+                                          }
+                                        }
+
+                                        dynamic "single_query_argument" {
+                                          for_each = lookup(field_to_match.value, "single_query_argument", null) != null ? [field_to_match.value.single_query_argument] : []
+
+                                          content {
+                                            name = single_query_argument.value.name
+                                          }
+                                        }
+
+                                        dynamic "uri_path" {
+                                          for_each = lookup(field_to_match.value, "uri_path", null) != null ? [1] : []
+
+                                          content {}
+                                        }
+                                      }
+                                    }
+
+                                    dynamic "text_transformation" {
+                                      for_each = size_constraint_statement.value.text_transformation != null ? size_constraint_statement.value.text_transformation : []
+
+                                      content {
+                                        priority = text_transformation.value.priority
+                                        type     = text_transformation.value.type
+                                      }
+                                    }
+                                  }
+                                }
+                              }
+                            }
                             dynamic "statement" {
                               iterator = nested_not_statement
                               for_each = nested_statement.value.type != null && nested_statement.value.type == "not_byte_match_statement" ? [1] : []
@@ -1588,7 +1883,7 @@ resource "aws_wafv2_web_acl" "default" {
                                 dynamic "regex_pattern_set_reference_statement" {
                                   for_each = nested_statement.value.type == "not_regex_pattern_set_reference_statement" ? [jsondecode(nested_statement.value.statement)] : []
                                   content {
-                                    arn = try(aws_wafv2_regex_pattern_set.default[local.regex_rule_to_reusable_regex_pattern_set[regex_pattern_set_reference_statement.value.set_name]], null) != null ? aws_wafv2_regex_pattern_set.default[local.regex_rule_to_reusable_regex_pattern_set[regex_pattern_set_reference_statement.value.set_name]].arn : (try(aws_wafv2_regex_pattern_set.default[local.regex_rule_to_regex_pattern_set[rule.key]], null) != null ? aws_wafv2_regex_pattern_set.default[local.regex_rule_to_regex_pattern_set[rule.key]].arn : try(regex_pattern_set_reference_statement.value.arnement.value.arn, null))
+                                    arn = try(aws_wafv2_regex_pattern_set.default[local.regex_rule_to_reusable_regex_pattern_set[regex_pattern_set_reference_statement.value.set_name]], null) != null ? aws_wafv2_regex_pattern_set.default[local.regex_rule_to_reusable_regex_pattern_set[regex_pattern_set_reference_statement.value.set_name]].arn : (try(aws_wafv2_regex_pattern_set.default[local.regex_rule_to_regex_pattern_set[rule.key]], null) != null ? aws_wafv2_regex_pattern_set.default[local.regex_rule_to_regex_pattern_set[rule.key]].arn : try(regex_pattern_set_reference_statement.value.arn, null))
 
                                     dynamic "field_to_match" {
                                       for_each = regex_pattern_set_reference_statement.value.field_to_match != null ? [regex_pattern_set_reference_statement.value.field_to_match] : []
@@ -1682,6 +1977,80 @@ resource "aws_wafv2_web_acl" "default" {
                       iterator = nested_statement
                       for_each = or_statement.value.statements
                       content {
+                        dynamic "size_constraint_statement" {
+                          for_each = nested_statement.value.type == "size_constraint_statement" ? [jsondecode(nested_statement.value.statement)] : []
+                          content {
+                            comparison_operator = size_constraint_statement.value.comparison_operator
+                            size                = size_constraint_statement.value.size
+
+                            dynamic "field_to_match" {
+                              for_each = size_constraint_statement.value.field_to_match != null ? [size_constraint_statement.value.field_to_match] : []
+
+                              content {
+                                dynamic "all_query_arguments" {
+                                  for_each = lookup(field_to_match.value, "all_query_arguments", null) != null ? [1] : []
+
+                                  content {}
+                                }
+
+                                dynamic "body" {
+                                  for_each = lookup(field_to_match.value, "body", null) != null ? [1] : []
+
+                                  content {
+                                    # Oversize handling tells AWS WAF what to do with a web request when the request component that the rule inspects is over the limits.
+                                    # WAF does not support inspecting the entire contents of the body of a web request when the body exceeds 8 KB (8192 bytes).
+                                    # Only the first 8 KB of the request body are forwarded to WAF by the underlying host service
+                                    # Valid values include the following: CONTINUE, MATCH, NO_MATCH
+                                    oversize_handling = try(field_to_match.value.body.oversize_handling, "CONTINUE")
+                                  }
+                                }
+
+                                dynamic "method" {
+                                  for_each = lookup(field_to_match.value, "method", null) != null ? [1] : []
+
+                                  content {}
+                                }
+
+                                dynamic "query_string" {
+                                  for_each = lookup(field_to_match.value, "query_string", null) != null ? [1] : []
+
+                                  content {}
+                                }
+
+                                dynamic "single_header" {
+                                  for_each = lookup(field_to_match.value, "single_header", null) != null ? [field_to_match.value.single_header] : []
+
+                                  content {
+                                    name = single_header.value.name
+                                  }
+                                }
+
+                                dynamic "single_query_argument" {
+                                  for_each = lookup(field_to_match.value, "single_query_argument", null) != null ? [field_to_match.value.single_query_argument] : []
+
+                                  content {
+                                    name = single_query_argument.value.name
+                                  }
+                                }
+
+                                dynamic "uri_path" {
+                                  for_each = lookup(field_to_match.value, "uri_path", null) != null ? [1] : []
+
+                                  content {}
+                                }
+                              }
+                            }
+
+                            dynamic "text_transformation" {
+                              for_each = size_constraint_statement.value.text_transformation != null ? size_constraint_statement.value.text_transformation : []
+
+                              content {
+                                priority = text_transformation.value.priority
+                                type     = text_transformation.value.type
+                              }
+                            }
+                          }
+                        }
                         dynamic "byte_match_statement" {
                           for_each = nested_statement.value.type == "byte_match_statement" ? [jsondecode(nested_statement.value.statement)] : []
                           content {
@@ -1769,7 +2138,7 @@ resource "aws_wafv2_web_acl" "default" {
                         dynamic "regex_pattern_set_reference_statement" {
                           for_each = nested_statement.value.type == "regex_pattern_set_reference_statement" ? [jsondecode(nested_statement.value.statement)] : []
                           content {
-                            arn = try(aws_wafv2_regex_pattern_set.default[local.regex_rule_to_reusable_regex_pattern_set[regex_pattern_set_reference_statement.value.set_name]], null) != null ? aws_wafv2_regex_pattern_set.default[local.regex_rule_to_reusable_regex_pattern_set[regex_pattern_set_reference_statement.value.set_name]].arn : (try(aws_wafv2_regex_pattern_set.default[local.regex_rule_to_regex_pattern_set[rule.key]], null) != null ? aws_wafv2_regex_pattern_set.default[local.regex_rule_to_regex_pattern_set[rule.key]].arn : try(regex_pattern_set_reference_statement.value.arnement.value.arn, null))
+                            arn = try(aws_wafv2_regex_pattern_set.default[local.regex_rule_to_reusable_regex_pattern_set[regex_pattern_set_reference_statement.value.set_name]], null) != null ? aws_wafv2_regex_pattern_set.default[local.regex_rule_to_reusable_regex_pattern_set[regex_pattern_set_reference_statement.value.set_name]].arn : (try(aws_wafv2_regex_pattern_set.default[local.regex_rule_to_regex_pattern_set[rule.key]], null) != null ? aws_wafv2_regex_pattern_set.default[local.regex_rule_to_regex_pattern_set[rule.key]].arn : try(regex_pattern_set_reference_statement.value.arn, null))
 
                             dynamic "field_to_match" {
                               for_each = regex_pattern_set_reference_statement.value.field_to_match != null ? [regex_pattern_set_reference_statement.value.field_to_match] : []
@@ -1856,13 +2225,92 @@ resource "aws_wafv2_web_acl" "default" {
                           }
                         }
                         dynamic "not_statement" {
-                          for_each = nested_statement.value.type == "not_byte_match_statement" || nested_statement.value.type == "not_label_match_statement" || nested_statement.value.type == "not_regex_pattern_set_reference_statement" ? [1] : []
+                          for_each = nested_statement.value.type == "not_byte_match_statement" || nested_statement.value.type == "not_label_match_statement" || nested_statement.value.type == "not_regex_pattern_set_reference_statement" || nested_statement.value.type == "not_size_constraint_statement" ? [1] : []
                           content {
+                            dynamic "statement" {
+                              iterator = nested_not_statement
+                              for_each = nested_statement.value.type != null && nested_statement.value.type == "not_size_constraint_statement" ? [1] : []
+                              content {
+                                dynamic "size_constraint_statement" {
+                                  for_each = nested_statement.value.type == "not_size_constraint_statement" ? [jsondecode(nested_statement.value.statement)] : []
+                                  content {
+                                    comparison_operator = size_constraint_statement.value.comparison_operator
+                                    size                = size_constraint_statement.value.size
+
+                                    dynamic "field_to_match" {
+                                      for_each = size_constraint_statement.value.field_to_match != null ? [size_constraint_statement.value.field_to_match] : []
+
+                                      content {
+                                        dynamic "all_query_arguments" {
+                                          for_each = lookup(field_to_match.value, "all_query_arguments", null) != null ? [1] : []
+
+                                          content {}
+                                        }
+
+                                        dynamic "body" {
+                                          for_each = lookup(field_to_match.value, "body", null) != null ? [1] : []
+
+                                          content {
+                                            # Oversize handling tells AWS WAF what to do with a web request when the request component that the rule inspects is over the limits.
+                                            # WAF does not support inspecting the entire contents of the body of a web request when the body exceeds 8 KB (8192 bytes).
+                                            # Only the first 8 KB of the request body are forwarded to WAF by the underlying host service
+                                            # Valid values include the following: CONTINUE, MATCH, NO_MATCH
+                                            oversize_handling = try(field_to_match.value.body.oversize_handling, "CONTINUE")
+                                          }
+                                        }
+
+                                        dynamic "method" {
+                                          for_each = lookup(field_to_match.value, "method", null) != null ? [1] : []
+
+                                          content {}
+                                        }
+
+                                        dynamic "query_string" {
+                                          for_each = lookup(field_to_match.value, "query_string", null) != null ? [1] : []
+
+                                          content {}
+                                        }
+
+                                        dynamic "single_header" {
+                                          for_each = lookup(field_to_match.value, "single_header", null) != null ? [field_to_match.value.single_header] : []
+
+                                          content {
+                                            name = single_header.value.name
+                                          }
+                                        }
+
+                                        dynamic "single_query_argument" {
+                                          for_each = lookup(field_to_match.value, "single_query_argument", null) != null ? [field_to_match.value.single_query_argument] : []
+
+                                          content {
+                                            name = single_query_argument.value.name
+                                          }
+                                        }
+
+                                        dynamic "uri_path" {
+                                          for_each = lookup(field_to_match.value, "uri_path", null) != null ? [1] : []
+
+                                          content {}
+                                        }
+                                      }
+                                    }
+
+                                    dynamic "text_transformation" {
+                                      for_each = size_constraint_statement.value.text_transformation != null ? size_constraint_statement.value.text_transformation : []
+
+                                      content {
+                                        priority = text_transformation.value.priority
+                                        type     = text_transformation.value.type
+                                      }
+                                    }
+                                  }
+                                }
+                              }
+                            }
                             dynamic "statement" {
                               iterator = nested_not_statement
                               for_each = nested_statement.value.type != null && nested_statement.value.type == "not_byte_match_statement" ? [1] : []
                               content {
-
                                 dynamic "byte_match_statement" {
                                   for_each = nested_statement.value.type == "not_byte_match_statement" ? [jsondecode(nested_statement.value.statement)] : []
                                   content {
@@ -1968,7 +2416,7 @@ resource "aws_wafv2_web_acl" "default" {
                                 dynamic "regex_pattern_set_reference_statement" {
                                   for_each = nested_statement.value.type == "not_regex_pattern_set_reference_statement" ? [jsondecode(nested_statement.value.statement)] : []
                                   content {
-                                    arn = try(aws_wafv2_regex_pattern_set.default[local.regex_rule_to_reusable_regex_pattern_set[regex_pattern_set_reference_statement.value.set_name]], null) != null ? aws_wafv2_regex_pattern_set.default[local.regex_rule_to_reusable_regex_pattern_set[regex_pattern_set_reference_statement.value.set_name]].arn : (try(aws_wafv2_regex_pattern_set.default[local.regex_rule_to_regex_pattern_set[rule.key]], null) != null ? aws_wafv2_regex_pattern_set.default[local.regex_rule_to_regex_pattern_set[rule.key]].arn : try(regex_pattern_set_reference_statement.value.arnement.value.arn, null))
+                                    arn = try(aws_wafv2_regex_pattern_set.default[local.regex_rule_to_reusable_regex_pattern_set[regex_pattern_set_reference_statement.value.set_name]], null) != null ? aws_wafv2_regex_pattern_set.default[local.regex_rule_to_reusable_regex_pattern_set[regex_pattern_set_reference_statement.value.set_name]].arn : (try(aws_wafv2_regex_pattern_set.default[local.regex_rule_to_regex_pattern_set[rule.key]], null) != null ? aws_wafv2_regex_pattern_set.default[local.regex_rule_to_regex_pattern_set[rule.key]].arn : try(regex_pattern_set_reference_statement.value.arn, null))
 
                                     dynamic "field_to_match" {
                                       for_each = regex_pattern_set_reference_statement.value.field_to_match != null ? [regex_pattern_set_reference_statement.value.field_to_match] : []
@@ -2192,7 +2640,7 @@ resource "aws_wafv2_web_acl" "default" {
                 dynamic "regex_pattern_set_reference_statement" {
                   for_each = scope_down_statement.value.regex_pattern_set_reference_statement != null ? [scope_down_statement.value.regex_pattern_set_reference_statement] : []
                   content {
-                    arn = try(aws_wafv2_regex_pattern_set.default[local.regex_rule_to_reusable_regex_pattern_set[regex_pattern_set_reference_statement.value.set_name]], null) != null ? aws_wafv2_regex_pattern_set.default[local.regex_rule_to_reusable_regex_pattern_set[regex_pattern_set_reference_statement.value.set_name]].arn : (try(aws_wafv2_regex_pattern_set.default[local.regex_rule_to_regex_pattern_set[rule.key]], null) != null ? aws_wafv2_regex_pattern_set.default[local.regex_rule_to_regex_pattern_set[rule.key]].arn : try(regex_pattern_set_reference_statement.value.arnement.value.arn, null))
+                    arn = try(aws_wafv2_regex_pattern_set.default[local.regex_rule_to_reusable_regex_pattern_set[regex_pattern_set_reference_statement.value.set_name]], null) != null ? aws_wafv2_regex_pattern_set.default[local.regex_rule_to_reusable_regex_pattern_set[regex_pattern_set_reference_statement.value.set_name]].arn : (try(aws_wafv2_regex_pattern_set.default[local.regex_rule_to_regex_pattern_set[rule.key]], null) != null ? aws_wafv2_regex_pattern_set.default[local.regex_rule_to_regex_pattern_set[rule.key]].arn : try(regex_pattern_set_reference_statement.value.arn, null))
 
                     dynamic "field_to_match" {
                       for_each = regex_pattern_set_reference_statement.value.field_to_match != null ? [regex_pattern_set_reference_statement.value.field_to_match] : []
@@ -2276,6 +2724,80 @@ resource "aws_wafv2_web_acl" "default" {
                   content {
                     scope = label_match_statement.value.scope
                     key   = label_match_statement.value.key
+                  }
+                }
+                dynamic "size_constraint_statement" {
+                  for_each = scope_down_statement.value.size_constraint_statement != null ? [scope_down_statement.value.size_constraint_statement] : []
+                  content {
+                    comparison_operator = size_constraint_statement.value.comparison_operator
+                    size                = size_constraint_statement.value.size
+
+                    dynamic "field_to_match" {
+                      for_each = size_constraint_statement.value.field_to_match != null ? [size_constraint_statement.value.field_to_match] : []
+
+                      content {
+                        dynamic "all_query_arguments" {
+                          for_each = lookup(field_to_match.value, "all_query_arguments", null) != null ? [1] : []
+
+                          content {}
+                        }
+
+                        dynamic "body" {
+                          for_each = lookup(field_to_match.value, "body", null) != null ? [1] : []
+
+                          content {
+                            # Oversize handling tells AWS WAF what to do with a web request when the request component that the rule inspects is over the limits.
+                            # WAF does not support inspecting the entire contents of the body of a web request when the body exceeds 8 KB (8192 bytes).
+                            # Only the first 8 KB of the request body are forwarded to WAF by the underlying host service
+                            # Valid values include the following: CONTINUE, MATCH, NO_MATCH
+                            oversize_handling = try(field_to_match.value.body.oversize_handling, "CONTINUE")
+                          }
+                        }
+
+                        dynamic "method" {
+                          for_each = lookup(field_to_match.value, "method", null) != null ? [1] : []
+
+                          content {}
+                        }
+
+                        dynamic "query_string" {
+                          for_each = lookup(field_to_match.value, "query_string", null) != null ? [1] : []
+
+                          content {}
+                        }
+
+                        dynamic "single_header" {
+                          for_each = lookup(field_to_match.value, "single_header", null) != null ? [field_to_match.value.single_header] : []
+
+                          content {
+                            name = single_header.value.name
+                          }
+                        }
+
+                        dynamic "single_query_argument" {
+                          for_each = lookup(field_to_match.value, "single_query_argument", null) != null ? [field_to_match.value.single_query_argument] : []
+
+                          content {
+                            name = single_query_argument.value.name
+                          }
+                        }
+
+                        dynamic "uri_path" {
+                          for_each = lookup(field_to_match.value, "uri_path", null) != null ? [1] : []
+
+                          content {}
+                        }
+                      }
+                    }
+
+                    dynamic "text_transformation" {
+                      for_each = size_constraint_statement.value.text_transformation != null ? size_constraint_statement.value.text_transformation : []
+
+                      content {
+                        priority = text_transformation.value.priority
+                        type     = text_transformation.value.type
+                      }
+                    }
                   }
                 }
                 dynamic "byte_match_statement" {
@@ -2363,8 +2885,87 @@ resource "aws_wafv2_web_acl" "default" {
                   }
                 }
                 dynamic "not_statement" {
-                  for_each = scope_down_statement.value.not_byte_match_statement != null || scope_down_statement.value.not_label_match_statement != null || scope_down_statement.value.not_regex_pattern_set_reference_statement != null ? [1] : []
+                  for_each = scope_down_statement.value.not_byte_match_statement != null || scope_down_statement.value.not_label_match_statement != null || scope_down_statement.value.not_regex_pattern_set_reference_statement != null || scope_down_statement.value.not_size_constraint_statement != null ? [1] : []
                   content {
+                    dynamic "statement" {
+                      for_each = scope_down_statement.value.not_size_constraint_statement != null ? [1] : []
+                      content {
+                        dynamic "size_constraint_statement" {
+                          for_each = scope_down_statement.value.not_size_constraint_statement != null ? [scope_down_statement.value.not_size_constraint_statement] : []
+                          content {
+                            comparison_operator = size_constraint_statement.value.comparison_operator
+                            size                = size_constraint_statement.value.size
+
+                            dynamic "field_to_match" {
+                              for_each = size_constraint_statement.value.field_to_match != null ? [size_constraint_statement.value.field_to_match] : []
+
+                              content {
+                                dynamic "all_query_arguments" {
+                                  for_each = lookup(field_to_match.value, "all_query_arguments", null) != null ? [1] : []
+
+                                  content {}
+                                }
+
+                                dynamic "body" {
+                                  for_each = lookup(field_to_match.value, "body", null) != null ? [1] : []
+
+                                  content {
+                                    # Oversize handling tells AWS WAF what to do with a web request when the request component that the rule inspects is over the limits.
+                                    # WAF does not support inspecting the entire contents of the body of a web request when the body exceeds 8 KB (8192 bytes).
+                                    # Only the first 8 KB of the request body are forwarded to WAF by the underlying host service
+                                    # Valid values include the following: CONTINUE, MATCH, NO_MATCH
+                                    oversize_handling = try(field_to_match.value.body.oversize_handling, "CONTINUE")
+                                  }
+                                }
+
+                                dynamic "method" {
+                                  for_each = lookup(field_to_match.value, "method", null) != null ? [1] : []
+
+                                  content {}
+                                }
+
+                                dynamic "query_string" {
+                                  for_each = lookup(field_to_match.value, "query_string", null) != null ? [1] : []
+
+                                  content {}
+                                }
+
+                                dynamic "single_header" {
+                                  for_each = lookup(field_to_match.value, "single_header", null) != null ? [field_to_match.value.single_header] : []
+
+                                  content {
+                                    name = single_header.value.name
+                                  }
+                                }
+
+                                dynamic "single_query_argument" {
+                                  for_each = lookup(field_to_match.value, "single_query_argument", null) != null ? [field_to_match.value.single_query_argument] : []
+
+                                  content {
+                                    name = single_query_argument.value.name
+                                  }
+                                }
+
+                                dynamic "uri_path" {
+                                  for_each = lookup(field_to_match.value, "uri_path", null) != null ? [1] : []
+
+                                  content {}
+                                }
+                              }
+                            }
+
+                            dynamic "text_transformation" {
+                              for_each = size_constraint_statement.value.text_transformation != null ? size_constraint_statement.value.text_transformation : []
+
+                              content {
+                                priority = text_transformation.value.priority
+                                type     = text_transformation.value.type
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
                     dynamic "statement" {
                       for_each = scope_down_statement.value.not_byte_match_statement != null ? [1] : []
                       content {
@@ -2471,7 +3072,7 @@ resource "aws_wafv2_web_acl" "default" {
                         dynamic "regex_pattern_set_reference_statement" {
                           for_each = statement.value.not_regex_pattern_set_reference_statement != null ? [statement.value.not_regex_pattern_set_reference_statement] : []
                           content {
-                            arn = try(aws_wafv2_regex_pattern_set.default[local.regex_rule_to_reusable_regex_pattern_set[regex_pattern_set_reference_statement.value.set_name]], null) != null ? aws_wafv2_regex_pattern_set.default[local.regex_rule_to_reusable_regex_pattern_set[regex_pattern_set_reference_statement.value.set_name]].arn : (try(aws_wafv2_regex_pattern_set.default[local.regex_rule_to_regex_pattern_set[rule.key]], null) != null ? aws_wafv2_regex_pattern_set.default[local.regex_rule_to_regex_pattern_set[rule.key]].arn : try(regex_pattern_set_reference_statement.value.arnement.value.arn, null))
+                            arn = try(aws_wafv2_regex_pattern_set.default[local.regex_rule_to_reusable_regex_pattern_set[regex_pattern_set_reference_statement.value.set_name]], null) != null ? aws_wafv2_regex_pattern_set.default[local.regex_rule_to_reusable_regex_pattern_set[regex_pattern_set_reference_statement.value.set_name]].arn : (try(aws_wafv2_regex_pattern_set.default[local.regex_rule_to_regex_pattern_set[rule.key]], null) != null ? aws_wafv2_regex_pattern_set.default[local.regex_rule_to_regex_pattern_set[rule.key]].arn : try(regex_pattern_set_reference_statement.value.arn, null))
 
                             dynamic "field_to_match" {
                               for_each = regex_pattern_set_reference_statement.value.field_to_match != null ? [regex_pattern_set_reference_statement.value.field_to_match] : []
@@ -2562,6 +3163,80 @@ resource "aws_wafv2_web_acl" "default" {
                       iterator = nested_statement
                       for_each = and_statement.value.statements
                       content {
+                        dynamic "size_constraint_statement" {
+                          for_each = nested_statement.value.type == "size_constraint_statement" ? [jsondecode(nested_statement.value.statement)] : []
+                          content {
+                            comparison_operator = size_constraint_statement.value.comparison_operator
+                            size                = size_constraint_statement.value.size
+
+                            dynamic "field_to_match" {
+                              for_each = size_constraint_statement.value.field_to_match != null ? [size_constraint_statement.value.field_to_match] : []
+
+                              content {
+                                dynamic "all_query_arguments" {
+                                  for_each = lookup(field_to_match.value, "all_query_arguments", null) != null ? [1] : []
+
+                                  content {}
+                                }
+
+                                dynamic "body" {
+                                  for_each = lookup(field_to_match.value, "body", null) != null ? [1] : []
+
+                                  content {
+                                    # Oversize handling tells AWS WAF what to do with a web request when the request component that the rule inspects is over the limits.
+                                    # WAF does not support inspecting the entire contents of the body of a web request when the body exceeds 8 KB (8192 bytes).
+                                    # Only the first 8 KB of the request body are forwarded to WAF by the underlying host service
+                                    # Valid values include the following: CONTINUE, MATCH, NO_MATCH
+                                    oversize_handling = try(field_to_match.value.body.oversize_handling, "CONTINUE")
+                                  }
+                                }
+
+                                dynamic "method" {
+                                  for_each = lookup(field_to_match.value, "method", null) != null ? [1] : []
+
+                                  content {}
+                                }
+
+                                dynamic "query_string" {
+                                  for_each = lookup(field_to_match.value, "query_string", null) != null ? [1] : []
+
+                                  content {}
+                                }
+
+                                dynamic "single_header" {
+                                  for_each = lookup(field_to_match.value, "single_header", null) != null ? [field_to_match.value.single_header] : []
+
+                                  content {
+                                    name = single_header.value.name
+                                  }
+                                }
+
+                                dynamic "single_query_argument" {
+                                  for_each = lookup(field_to_match.value, "single_query_argument", null) != null ? [field_to_match.value.single_query_argument] : []
+
+                                  content {
+                                    name = single_query_argument.value.name
+                                  }
+                                }
+
+                                dynamic "uri_path" {
+                                  for_each = lookup(field_to_match.value, "uri_path", null) != null ? [1] : []
+
+                                  content {}
+                                }
+                              }
+                            }
+
+                            dynamic "text_transformation" {
+                              for_each = size_constraint_statement.value.text_transformation != null ? size_constraint_statement.value.text_transformation : []
+
+                              content {
+                                priority = text_transformation.value.priority
+                                type     = text_transformation.value.type
+                              }
+                            }
+                          }
+                        }
                         dynamic "byte_match_statement" {
                           for_each = nested_statement.value.type == "byte_match_statement" ? [jsondecode(nested_statement.value.statement)] : []
                           content {
@@ -2649,7 +3324,7 @@ resource "aws_wafv2_web_acl" "default" {
                         dynamic "regex_pattern_set_reference_statement" {
                           for_each = nested_statement.value.type == "regex_pattern_set_reference_statement" ? [jsondecode(nested_statement.value.statement)] : []
                           content {
-                            arn = try(aws_wafv2_regex_pattern_set.default[local.regex_rule_to_reusable_regex_pattern_set[regex_pattern_set_reference_statement.value.set_name]], null) != null ? aws_wafv2_regex_pattern_set.default[local.regex_rule_to_reusable_regex_pattern_set[regex_pattern_set_reference_statement.value.set_name]].arn : (try(aws_wafv2_regex_pattern_set.default[local.regex_rule_to_regex_pattern_set[rule.key]], null) != null ? aws_wafv2_regex_pattern_set.default[local.regex_rule_to_regex_pattern_set[rule.key]].arn : try(regex_pattern_set_reference_statement.value.arnement.value.arn, null))
+                            arn = try(aws_wafv2_regex_pattern_set.default[local.regex_rule_to_reusable_regex_pattern_set[regex_pattern_set_reference_statement.value.set_name]], null) != null ? aws_wafv2_regex_pattern_set.default[local.regex_rule_to_reusable_regex_pattern_set[regex_pattern_set_reference_statement.value.set_name]].arn : (try(aws_wafv2_regex_pattern_set.default[local.regex_rule_to_regex_pattern_set[rule.key]], null) != null ? aws_wafv2_regex_pattern_set.default[local.regex_rule_to_regex_pattern_set[rule.key]].arn : try(regex_pattern_set_reference_statement.value.arn, null))
 
                             dynamic "field_to_match" {
                               for_each = regex_pattern_set_reference_statement.value.field_to_match != null ? [regex_pattern_set_reference_statement.value.field_to_match] : []
@@ -2736,8 +3411,88 @@ resource "aws_wafv2_web_acl" "default" {
                           }
                         }
                         dynamic "not_statement" {
-                          for_each = nested_statement.value.type == "not_byte_match_statement" || nested_statement.value.type == "not_label_match_statement" || nested_statement.value.type == "not_regex_pattern_set_reference_statement" ? [1] : []
+                          for_each = nested_statement.value.type == "not_byte_match_statement" || nested_statement.value.type == "not_label_match_statement" || nested_statement.value.type == "not_regex_pattern_set_reference_statement" || nested_statement.value.type == "not_size_constraint_statement" ? [1] : []
                           content {
+                            dynamic "statement" {
+                              iterator = nested_not_statement
+                              for_each = nested_statement.value.type != null && nested_statement.value.type == "not_size_constraint_statement" ? [1] : []
+                              content {
+                                dynamic "size_constraint_statement" {
+                                  for_each = nested_statement.value.type == "not_size_constraint_statement" ? [jsondecode(nested_statement.value.statement)] : []
+                                  content {
+                                    comparison_operator = size_constraint_statement.value.comparison_operator
+                                    size                = size_constraint_statement.value.size
+
+                                    dynamic "field_to_match" {
+                                      for_each = size_constraint_statement.value.field_to_match != null ? [size_constraint_statement.value.field_to_match] : []
+
+                                      content {
+                                        dynamic "all_query_arguments" {
+                                          for_each = lookup(field_to_match.value, "all_query_arguments", null) != null ? [1] : []
+
+                                          content {}
+                                        }
+
+                                        dynamic "body" {
+                                          for_each = lookup(field_to_match.value, "body", null) != null ? [1] : []
+
+                                          content {
+                                            # Oversize handling tells AWS WAF what to do with a web request when the request component that the rule inspects is over the limits.
+                                            # WAF does not support inspecting the entire contents of the body of a web request when the body exceeds 8 KB (8192 bytes).
+                                            # Only the first 8 KB of the request body are forwarded to WAF by the underlying host service
+                                            # Valid values include the following: CONTINUE, MATCH, NO_MATCH
+                                            oversize_handling = try(field_to_match.value.body.oversize_handling, "CONTINUE")
+                                          }
+                                        }
+
+                                        dynamic "method" {
+                                          for_each = lookup(field_to_match.value, "method", null) != null ? [1] : []
+
+                                          content {}
+                                        }
+
+                                        dynamic "query_string" {
+                                          for_each = lookup(field_to_match.value, "query_string", null) != null ? [1] : []
+
+                                          content {}
+                                        }
+
+                                        dynamic "single_header" {
+                                          for_each = lookup(field_to_match.value, "single_header", null) != null ? [field_to_match.value.single_header] : []
+
+                                          content {
+                                            name = single_header.value.name
+                                          }
+                                        }
+
+                                        dynamic "single_query_argument" {
+                                          for_each = lookup(field_to_match.value, "single_query_argument", null) != null ? [field_to_match.value.single_query_argument] : []
+
+                                          content {
+                                            name = single_query_argument.value.name
+                                          }
+                                        }
+
+                                        dynamic "uri_path" {
+                                          for_each = lookup(field_to_match.value, "uri_path", null) != null ? [1] : []
+
+                                          content {}
+                                        }
+                                      }
+                                    }
+
+                                    dynamic "text_transformation" {
+                                      for_each = size_constraint_statement.value.text_transformation != null ? size_constraint_statement.value.text_transformation : []
+
+                                      content {
+                                        priority = text_transformation.value.priority
+                                        type     = text_transformation.value.type
+                                      }
+                                    }
+                                  }
+                                }
+                              }
+                            }
                             dynamic "statement" {
                               iterator = nested_not_statement
                               for_each = nested_statement.value.type != null && nested_statement.value.type == "not_byte_match_statement" ? [1] : []
@@ -2848,7 +3603,7 @@ resource "aws_wafv2_web_acl" "default" {
                                 dynamic "regex_pattern_set_reference_statement" {
                                   for_each = nested_statement.value.type == "not_regex_pattern_set_reference_statement" ? [jsondecode(nested_statement.value.statement)] : []
                                   content {
-                                    arn = try(aws_wafv2_regex_pattern_set.default[local.regex_rule_to_reusable_regex_pattern_set[regex_pattern_set_reference_statement.value.set_name]], null) != null ? aws_wafv2_regex_pattern_set.default[local.regex_rule_to_reusable_regex_pattern_set[regex_pattern_set_reference_statement.value.set_name]].arn : (try(aws_wafv2_regex_pattern_set.default[local.regex_rule_to_regex_pattern_set[rule.key]], null) != null ? aws_wafv2_regex_pattern_set.default[local.regex_rule_to_regex_pattern_set[rule.key]].arn : try(regex_pattern_set_reference_statement.value.arnement.value.arn, null))
+                                    arn = try(aws_wafv2_regex_pattern_set.default[local.regex_rule_to_reusable_regex_pattern_set[regex_pattern_set_reference_statement.value.set_name]], null) != null ? aws_wafv2_regex_pattern_set.default[local.regex_rule_to_reusable_regex_pattern_set[regex_pattern_set_reference_statement.value.set_name]].arn : (try(aws_wafv2_regex_pattern_set.default[local.regex_rule_to_regex_pattern_set[rule.key]], null) != null ? aws_wafv2_regex_pattern_set.default[local.regex_rule_to_regex_pattern_set[rule.key]].arn : try(regex_pattern_set_reference_statement.value.arn, null))
 
                                     dynamic "field_to_match" {
                                       for_each = regex_pattern_set_reference_statement.value.field_to_match != null ? [regex_pattern_set_reference_statement.value.field_to_match] : []
@@ -2942,6 +3697,80 @@ resource "aws_wafv2_web_acl" "default" {
                       iterator = nested_statement
                       for_each = or_statement.value.statements
                       content {
+                        dynamic "size_constraint_statement" {
+                          for_each = nested_statement.value.type == "size_constraint_statement" ? [jsondecode(nested_statement.value.statement)] : []
+                          content {
+                            comparison_operator = size_constraint_statement.value.comparison_operator
+                            size                = size_constraint_statement.value.size
+
+                            dynamic "field_to_match" {
+                              for_each = size_constraint_statement.value.field_to_match != null ? [size_constraint_statement.value.field_to_match] : []
+
+                              content {
+                                dynamic "all_query_arguments" {
+                                  for_each = lookup(field_to_match.value, "all_query_arguments", null) != null ? [1] : []
+
+                                  content {}
+                                }
+
+                                dynamic "body" {
+                                  for_each = lookup(field_to_match.value, "body", null) != null ? [1] : []
+
+                                  content {
+                                    # Oversize handling tells AWS WAF what to do with a web request when the request component that the rule inspects is over the limits.
+                                    # WAF does not support inspecting the entire contents of the body of a web request when the body exceeds 8 KB (8192 bytes).
+                                    # Only the first 8 KB of the request body are forwarded to WAF by the underlying host service
+                                    # Valid values include the following: CONTINUE, MATCH, NO_MATCH
+                                    oversize_handling = try(field_to_match.value.body.oversize_handling, "CONTINUE")
+                                  }
+                                }
+
+                                dynamic "method" {
+                                  for_each = lookup(field_to_match.value, "method", null) != null ? [1] : []
+
+                                  content {}
+                                }
+
+                                dynamic "query_string" {
+                                  for_each = lookup(field_to_match.value, "query_string", null) != null ? [1] : []
+
+                                  content {}
+                                }
+
+                                dynamic "single_header" {
+                                  for_each = lookup(field_to_match.value, "single_header", null) != null ? [field_to_match.value.single_header] : []
+
+                                  content {
+                                    name = single_header.value.name
+                                  }
+                                }
+
+                                dynamic "single_query_argument" {
+                                  for_each = lookup(field_to_match.value, "single_query_argument", null) != null ? [field_to_match.value.single_query_argument] : []
+
+                                  content {
+                                    name = single_query_argument.value.name
+                                  }
+                                }
+
+                                dynamic "uri_path" {
+                                  for_each = lookup(field_to_match.value, "uri_path", null) != null ? [1] : []
+
+                                  content {}
+                                }
+                              }
+                            }
+
+                            dynamic "text_transformation" {
+                              for_each = size_constraint_statement.value.text_transformation != null ? size_constraint_statement.value.text_transformation : []
+
+                              content {
+                                priority = text_transformation.value.priority
+                                type     = text_transformation.value.type
+                              }
+                            }
+                          }
+                        }
                         dynamic "byte_match_statement" {
                           for_each = nested_statement.value.type == "byte_match_statement" ? [jsondecode(nested_statement.value.statement)] : []
                           content {
@@ -3029,7 +3858,7 @@ resource "aws_wafv2_web_acl" "default" {
                         dynamic "regex_pattern_set_reference_statement" {
                           for_each = nested_statement.value.type == "regex_pattern_set_reference_statement" ? [jsondecode(nested_statement.value.statement)] : []
                           content {
-                            arn = try(aws_wafv2_regex_pattern_set.default[local.regex_rule_to_reusable_regex_pattern_set[regex_pattern_set_reference_statement.value.set_name]], null) != null ? aws_wafv2_regex_pattern_set.default[local.regex_rule_to_reusable_regex_pattern_set[regex_pattern_set_reference_statement.value.set_name]].arn : (try(aws_wafv2_regex_pattern_set.default[local.regex_rule_to_regex_pattern_set[rule.key]], null) != null ? aws_wafv2_regex_pattern_set.default[local.regex_rule_to_regex_pattern_set[rule.key]].arn : try(regex_pattern_set_reference_statement.value.arnement.value.arn, null))
+                            arn = try(aws_wafv2_regex_pattern_set.default[local.regex_rule_to_reusable_regex_pattern_set[regex_pattern_set_reference_statement.value.set_name]], null) != null ? aws_wafv2_regex_pattern_set.default[local.regex_rule_to_reusable_regex_pattern_set[regex_pattern_set_reference_statement.value.set_name]].arn : (try(aws_wafv2_regex_pattern_set.default[local.regex_rule_to_regex_pattern_set[rule.key]], null) != null ? aws_wafv2_regex_pattern_set.default[local.regex_rule_to_regex_pattern_set[rule.key]].arn : try(regex_pattern_set_reference_statement.value.arn, null))
 
                             dynamic "field_to_match" {
                               for_each = regex_pattern_set_reference_statement.value.field_to_match != null ? [regex_pattern_set_reference_statement.value.field_to_match] : []
@@ -3116,13 +3945,92 @@ resource "aws_wafv2_web_acl" "default" {
                           }
                         }
                         dynamic "not_statement" {
-                          for_each = nested_statement.value.type == "not_byte_match_statement" || nested_statement.value.type == "not_label_match_statement" || nested_statement.value.type == "not_regex_pattern_set_reference_statement" ? [1] : []
+                          for_each = nested_statement.value.type == "not_byte_match_statement" || nested_statement.value.type == "not_label_match_statement" || nested_statement.value.type == "not_regex_pattern_set_reference_statement" || nested_statement.value.type == "not_size_constraint_statement" ? [1] : []
                           content {
+                            dynamic "statement" {
+                              iterator = nested_not_statement
+                              for_each = nested_statement.value.type != null && nested_statement.value.type == "not_size_constraint_statement" ? [1] : []
+                              content {
+                                dynamic "size_constraint_statement" {
+                                  for_each = nested_statement.value.type == "not_size_constraint_statement" ? [jsondecode(nested_statement.value.statement)] : []
+                                  content {
+                                    comparison_operator = size_constraint_statement.value.comparison_operator
+                                    size                = size_constraint_statement.value.size
+
+                                    dynamic "field_to_match" {
+                                      for_each = size_constraint_statement.value.field_to_match != null ? [size_constraint_statement.value.field_to_match] : []
+
+                                      content {
+                                        dynamic "all_query_arguments" {
+                                          for_each = lookup(field_to_match.value, "all_query_arguments", null) != null ? [1] : []
+
+                                          content {}
+                                        }
+
+                                        dynamic "body" {
+                                          for_each = lookup(field_to_match.value, "body", null) != null ? [1] : []
+
+                                          content {
+                                            # Oversize handling tells AWS WAF what to do with a web request when the request component that the rule inspects is over the limits.
+                                            # WAF does not support inspecting the entire contents of the body of a web request when the body exceeds 8 KB (8192 bytes).
+                                            # Only the first 8 KB of the request body are forwarded to WAF by the underlying host service
+                                            # Valid values include the following: CONTINUE, MATCH, NO_MATCH
+                                            oversize_handling = try(field_to_match.value.body.oversize_handling, "CONTINUE")
+                                          }
+                                        }
+
+                                        dynamic "method" {
+                                          for_each = lookup(field_to_match.value, "method", null) != null ? [1] : []
+
+                                          content {}
+                                        }
+
+                                        dynamic "query_string" {
+                                          for_each = lookup(field_to_match.value, "query_string", null) != null ? [1] : []
+
+                                          content {}
+                                        }
+
+                                        dynamic "single_header" {
+                                          for_each = lookup(field_to_match.value, "single_header", null) != null ? [field_to_match.value.single_header] : []
+
+                                          content {
+                                            name = single_header.value.name
+                                          }
+                                        }
+
+                                        dynamic "single_query_argument" {
+                                          for_each = lookup(field_to_match.value, "single_query_argument", null) != null ? [field_to_match.value.single_query_argument] : []
+
+                                          content {
+                                            name = single_query_argument.value.name
+                                          }
+                                        }
+
+                                        dynamic "uri_path" {
+                                          for_each = lookup(field_to_match.value, "uri_path", null) != null ? [1] : []
+
+                                          content {}
+                                        }
+                                      }
+                                    }
+
+                                    dynamic "text_transformation" {
+                                      for_each = size_constraint_statement.value.text_transformation != null ? size_constraint_statement.value.text_transformation : []
+
+                                      content {
+                                        priority = text_transformation.value.priority
+                                        type     = text_transformation.value.type
+                                      }
+                                    }
+                                  }
+                                }
+                              }
+                            }
                             dynamic "statement" {
                               iterator = nested_not_statement
                               for_each = nested_statement.value.type != null && nested_statement.value.type == "not_byte_match_statement" ? [1] : []
                               content {
-
                                 dynamic "byte_match_statement" {
                                   for_each = nested_statement.value.type == "not_byte_match_statement" ? [jsondecode(nested_statement.value.statement)] : []
                                   content {
@@ -3228,7 +4136,7 @@ resource "aws_wafv2_web_acl" "default" {
                                 dynamic "regex_pattern_set_reference_statement" {
                                   for_each = nested_statement.value.type == "not_regex_pattern_set_reference_statement" ? [jsondecode(nested_statement.value.statement)] : []
                                   content {
-                                    arn = try(aws_wafv2_regex_pattern_set.default[local.regex_rule_to_reusable_regex_pattern_set[regex_pattern_set_reference_statement.value.set_name]], null) != null ? aws_wafv2_regex_pattern_set.default[local.regex_rule_to_reusable_regex_pattern_set[regex_pattern_set_reference_statement.value.set_name]].arn : (try(aws_wafv2_regex_pattern_set.default[local.regex_rule_to_regex_pattern_set[rule.key]], null) != null ? aws_wafv2_regex_pattern_set.default[local.regex_rule_to_regex_pattern_set[rule.key]].arn : try(regex_pattern_set_reference_statement.value.arnement.value.arn, null))
+                                    arn = try(aws_wafv2_regex_pattern_set.default[local.regex_rule_to_reusable_regex_pattern_set[regex_pattern_set_reference_statement.value.set_name]], null) != null ? aws_wafv2_regex_pattern_set.default[local.regex_rule_to_reusable_regex_pattern_set[regex_pattern_set_reference_statement.value.set_name]].arn : (try(aws_wafv2_regex_pattern_set.default[local.regex_rule_to_regex_pattern_set[rule.key]], null) != null ? aws_wafv2_regex_pattern_set.default[local.regex_rule_to_regex_pattern_set[rule.key]].arn : try(regex_pattern_set_reference_statement.value.arn, null))
 
                                     dynamic "field_to_match" {
                                       for_each = regex_pattern_set_reference_statement.value.field_to_match != null ? [regex_pattern_set_reference_statement.value.field_to_match] : []
@@ -3610,7 +4518,7 @@ resource "aws_wafv2_web_acl" "default" {
                 dynamic "regex_pattern_set_reference_statement" {
                   for_each = scope_down_statement.value.regex_pattern_set_reference_statement != null ? [scope_down_statement.value.regex_pattern_set_reference_statement] : []
                   content {
-                    arn = try(aws_wafv2_regex_pattern_set.default[local.regex_rule_to_reusable_regex_pattern_set[regex_pattern_set_reference_statement.value.set_name]], null) != null ? aws_wafv2_regex_pattern_set.default[local.regex_rule_to_reusable_regex_pattern_set[regex_pattern_set_reference_statement.value.set_name]].arn : (try(aws_wafv2_regex_pattern_set.default[local.regex_rule_to_regex_pattern_set[rule.key]], null) != null ? aws_wafv2_regex_pattern_set.default[local.regex_rule_to_regex_pattern_set[rule.key]].arn : try(regex_pattern_set_reference_statement.value.arnement.value.arn, null))
+                    arn = try(aws_wafv2_regex_pattern_set.default[local.regex_rule_to_reusable_regex_pattern_set[regex_pattern_set_reference_statement.value.set_name]], null) != null ? aws_wafv2_regex_pattern_set.default[local.regex_rule_to_reusable_regex_pattern_set[regex_pattern_set_reference_statement.value.set_name]].arn : (try(aws_wafv2_regex_pattern_set.default[local.regex_rule_to_regex_pattern_set[rule.key]], null) != null ? aws_wafv2_regex_pattern_set.default[local.regex_rule_to_regex_pattern_set[rule.key]].arn : try(regex_pattern_set_reference_statement.value.arn, null))
 
                     dynamic "field_to_match" {
                       for_each = regex_pattern_set_reference_statement.value.field_to_match != null ? [regex_pattern_set_reference_statement.value.field_to_match] : []
@@ -3694,6 +4602,80 @@ resource "aws_wafv2_web_acl" "default" {
                   content {
                     scope = label_match_statement.value.scope
                     key   = label_match_statement.value.key
+                  }
+                }
+                dynamic "size_constraint_statement" {
+                  for_each = scope_down_statement.value.size_constraint_statement != null ? [scope_down_statement.value.size_constraint_statement] : []
+                  content {
+                    comparison_operator = size_constraint_statement.value.comparison_operator
+                    size                = size_constraint_statement.value.size
+
+                    dynamic "field_to_match" {
+                      for_each = size_constraint_statement.value.field_to_match != null ? [size_constraint_statement.value.field_to_match] : []
+
+                      content {
+                        dynamic "all_query_arguments" {
+                          for_each = lookup(field_to_match.value, "all_query_arguments", null) != null ? [1] : []
+
+                          content {}
+                        }
+
+                        dynamic "body" {
+                          for_each = lookup(field_to_match.value, "body", null) != null ? [1] : []
+
+                          content {
+                            # Oversize handling tells AWS WAF what to do with a web request when the request component that the rule inspects is over the limits.
+                            # WAF does not support inspecting the entire contents of the body of a web request when the body exceeds 8 KB (8192 bytes).
+                            # Only the first 8 KB of the request body are forwarded to WAF by the underlying host service
+                            # Valid values include the following: CONTINUE, MATCH, NO_MATCH
+                            oversize_handling = try(field_to_match.value.body.oversize_handling, "CONTINUE")
+                          }
+                        }
+
+                        dynamic "method" {
+                          for_each = lookup(field_to_match.value, "method", null) != null ? [1] : []
+
+                          content {}
+                        }
+
+                        dynamic "query_string" {
+                          for_each = lookup(field_to_match.value, "query_string", null) != null ? [1] : []
+
+                          content {}
+                        }
+
+                        dynamic "single_header" {
+                          for_each = lookup(field_to_match.value, "single_header", null) != null ? [field_to_match.value.single_header] : []
+
+                          content {
+                            name = single_header.value.name
+                          }
+                        }
+
+                        dynamic "single_query_argument" {
+                          for_each = lookup(field_to_match.value, "single_query_argument", null) != null ? [field_to_match.value.single_query_argument] : []
+
+                          content {
+                            name = single_query_argument.value.name
+                          }
+                        }
+
+                        dynamic "uri_path" {
+                          for_each = lookup(field_to_match.value, "uri_path", null) != null ? [1] : []
+
+                          content {}
+                        }
+                      }
+                    }
+
+                    dynamic "text_transformation" {
+                      for_each = size_constraint_statement.value.text_transformation != null ? size_constraint_statement.value.text_transformation : []
+
+                      content {
+                        priority = text_transformation.value.priority
+                        type     = text_transformation.value.type
+                      }
+                    }
                   }
                 }
                 dynamic "byte_match_statement" {
@@ -3781,8 +4763,87 @@ resource "aws_wafv2_web_acl" "default" {
                   }
                 }
                 dynamic "not_statement" {
-                  for_each = scope_down_statement.value.not_byte_match_statement != null || scope_down_statement.value.not_label_match_statement != null || scope_down_statement.value.not_regex_pattern_set_reference_statement != null ? [1] : []
+                  for_each = scope_down_statement.value.not_byte_match_statement != null || scope_down_statement.value.not_label_match_statement != null || scope_down_statement.value.not_regex_pattern_set_reference_statement != null || scope_down_statement.value.not_size_constraint_statement != null ? [1] : []
                   content {
+                    dynamic "statement" {
+                      for_each = scope_down_statement.value.not_size_constraint_statement != null ? [1] : []
+                      content {
+                        dynamic "size_constraint_statement" {
+                          for_each = scope_down_statement.value.not_size_constraint_statement != null ? [scope_down_statement.value.not_size_constraint_statement] : []
+                          content {
+                            comparison_operator = size_constraint_statement.value.comparison_operator
+                            size                = size_constraint_statement.value.size
+
+                            dynamic "field_to_match" {
+                              for_each = size_constraint_statement.value.field_to_match != null ? [size_constraint_statement.value.field_to_match] : []
+
+                              content {
+                                dynamic "all_query_arguments" {
+                                  for_each = lookup(field_to_match.value, "all_query_arguments", null) != null ? [1] : []
+
+                                  content {}
+                                }
+
+                                dynamic "body" {
+                                  for_each = lookup(field_to_match.value, "body", null) != null ? [1] : []
+
+                                  content {
+                                    # Oversize handling tells AWS WAF what to do with a web request when the request component that the rule inspects is over the limits.
+                                    # WAF does not support inspecting the entire contents of the body of a web request when the body exceeds 8 KB (8192 bytes).
+                                    # Only the first 8 KB of the request body are forwarded to WAF by the underlying host service
+                                    # Valid values include the following: CONTINUE, MATCH, NO_MATCH
+                                    oversize_handling = try(field_to_match.value.body.oversize_handling, "CONTINUE")
+                                  }
+                                }
+
+                                dynamic "method" {
+                                  for_each = lookup(field_to_match.value, "method", null) != null ? [1] : []
+
+                                  content {}
+                                }
+
+                                dynamic "query_string" {
+                                  for_each = lookup(field_to_match.value, "query_string", null) != null ? [1] : []
+
+                                  content {}
+                                }
+
+                                dynamic "single_header" {
+                                  for_each = lookup(field_to_match.value, "single_header", null) != null ? [field_to_match.value.single_header] : []
+
+                                  content {
+                                    name = single_header.value.name
+                                  }
+                                }
+
+                                dynamic "single_query_argument" {
+                                  for_each = lookup(field_to_match.value, "single_query_argument", null) != null ? [field_to_match.value.single_query_argument] : []
+
+                                  content {
+                                    name = single_query_argument.value.name
+                                  }
+                                }
+
+                                dynamic "uri_path" {
+                                  for_each = lookup(field_to_match.value, "uri_path", null) != null ? [1] : []
+
+                                  content {}
+                                }
+                              }
+                            }
+
+                            dynamic "text_transformation" {
+                              for_each = size_constraint_statement.value.text_transformation != null ? size_constraint_statement.value.text_transformation : []
+
+                              content {
+                                priority = text_transformation.value.priority
+                                type     = text_transformation.value.type
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
                     dynamic "statement" {
                       for_each = scope_down_statement.value.not_byte_match_statement != null ? [1] : []
                       content {
@@ -3889,7 +4950,7 @@ resource "aws_wafv2_web_acl" "default" {
                         dynamic "regex_pattern_set_reference_statement" {
                           for_each = statement.value.not_regex_pattern_set_reference_statement != null ? [statement.value.not_regex_pattern_set_reference_statement] : []
                           content {
-                            arn = try(aws_wafv2_regex_pattern_set.default[local.regex_rule_to_reusable_regex_pattern_set[regex_pattern_set_reference_statement.value.set_name]], null) != null ? aws_wafv2_regex_pattern_set.default[local.regex_rule_to_reusable_regex_pattern_set[regex_pattern_set_reference_statement.value.set_name]].arn : (try(aws_wafv2_regex_pattern_set.default[local.regex_rule_to_regex_pattern_set[rule.key]], null) != null ? aws_wafv2_regex_pattern_set.default[local.regex_rule_to_regex_pattern_set[rule.key]].arn : try(regex_pattern_set_reference_statement.value.arnement.value.arn, null))
+                            arn = try(aws_wafv2_regex_pattern_set.default[local.regex_rule_to_reusable_regex_pattern_set[regex_pattern_set_reference_statement.value.set_name]], null) != null ? aws_wafv2_regex_pattern_set.default[local.regex_rule_to_reusable_regex_pattern_set[regex_pattern_set_reference_statement.value.set_name]].arn : (try(aws_wafv2_regex_pattern_set.default[local.regex_rule_to_regex_pattern_set[rule.key]], null) != null ? aws_wafv2_regex_pattern_set.default[local.regex_rule_to_regex_pattern_set[rule.key]].arn : try(regex_pattern_set_reference_statement.value.arn, null))
 
                             dynamic "field_to_match" {
                               for_each = regex_pattern_set_reference_statement.value.field_to_match != null ? [regex_pattern_set_reference_statement.value.field_to_match] : []
@@ -3980,6 +5041,80 @@ resource "aws_wafv2_web_acl" "default" {
                       iterator = nested_statement
                       for_each = and_statement.value.statements
                       content {
+                        dynamic "size_constraint_statement" {
+                          for_each = nested_statement.value.type == "size_constraint_statement" ? [jsondecode(nested_statement.value.statement)] : []
+                          content {
+                            comparison_operator = size_constraint_statement.value.comparison_operator
+                            size                = size_constraint_statement.value.size
+
+                            dynamic "field_to_match" {
+                              for_each = size_constraint_statement.value.field_to_match != null ? [size_constraint_statement.value.field_to_match] : []
+
+                              content {
+                                dynamic "all_query_arguments" {
+                                  for_each = lookup(field_to_match.value, "all_query_arguments", null) != null ? [1] : []
+
+                                  content {}
+                                }
+
+                                dynamic "body" {
+                                  for_each = lookup(field_to_match.value, "body", null) != null ? [1] : []
+
+                                  content {
+                                    # Oversize handling tells AWS WAF what to do with a web request when the request component that the rule inspects is over the limits.
+                                    # WAF does not support inspecting the entire contents of the body of a web request when the body exceeds 8 KB (8192 bytes).
+                                    # Only the first 8 KB of the request body are forwarded to WAF by the underlying host service
+                                    # Valid values include the following: CONTINUE, MATCH, NO_MATCH
+                                    oversize_handling = try(field_to_match.value.body.oversize_handling, "CONTINUE")
+                                  }
+                                }
+
+                                dynamic "method" {
+                                  for_each = lookup(field_to_match.value, "method", null) != null ? [1] : []
+
+                                  content {}
+                                }
+
+                                dynamic "query_string" {
+                                  for_each = lookup(field_to_match.value, "query_string", null) != null ? [1] : []
+
+                                  content {}
+                                }
+
+                                dynamic "single_header" {
+                                  for_each = lookup(field_to_match.value, "single_header", null) != null ? [field_to_match.value.single_header] : []
+
+                                  content {
+                                    name = single_header.value.name
+                                  }
+                                }
+
+                                dynamic "single_query_argument" {
+                                  for_each = lookup(field_to_match.value, "single_query_argument", null) != null ? [field_to_match.value.single_query_argument] : []
+
+                                  content {
+                                    name = single_query_argument.value.name
+                                  }
+                                }
+
+                                dynamic "uri_path" {
+                                  for_each = lookup(field_to_match.value, "uri_path", null) != null ? [1] : []
+
+                                  content {}
+                                }
+                              }
+                            }
+
+                            dynamic "text_transformation" {
+                              for_each = size_constraint_statement.value.text_transformation != null ? size_constraint_statement.value.text_transformation : []
+
+                              content {
+                                priority = text_transformation.value.priority
+                                type     = text_transformation.value.type
+                              }
+                            }
+                          }
+                        }
                         dynamic "byte_match_statement" {
                           for_each = nested_statement.value.type == "byte_match_statement" ? [jsondecode(nested_statement.value.statement)] : []
                           content {
@@ -4067,7 +5202,7 @@ resource "aws_wafv2_web_acl" "default" {
                         dynamic "regex_pattern_set_reference_statement" {
                           for_each = nested_statement.value.type == "regex_pattern_set_reference_statement" ? [jsondecode(nested_statement.value.statement)] : []
                           content {
-                            arn = try(aws_wafv2_regex_pattern_set.default[local.regex_rule_to_reusable_regex_pattern_set[regex_pattern_set_reference_statement.value.set_name]], null) != null ? aws_wafv2_regex_pattern_set.default[local.regex_rule_to_reusable_regex_pattern_set[regex_pattern_set_reference_statement.value.set_name]].arn : (try(aws_wafv2_regex_pattern_set.default[local.regex_rule_to_regex_pattern_set[rule.key]], null) != null ? aws_wafv2_regex_pattern_set.default[local.regex_rule_to_regex_pattern_set[rule.key]].arn : try(regex_pattern_set_reference_statement.value.arnement.value.arn, null))
+                            arn = try(aws_wafv2_regex_pattern_set.default[local.regex_rule_to_reusable_regex_pattern_set[regex_pattern_set_reference_statement.value.set_name]], null) != null ? aws_wafv2_regex_pattern_set.default[local.regex_rule_to_reusable_regex_pattern_set[regex_pattern_set_reference_statement.value.set_name]].arn : (try(aws_wafv2_regex_pattern_set.default[local.regex_rule_to_regex_pattern_set[rule.key]], null) != null ? aws_wafv2_regex_pattern_set.default[local.regex_rule_to_regex_pattern_set[rule.key]].arn : try(regex_pattern_set_reference_statement.value.arn, null))
 
                             dynamic "field_to_match" {
                               for_each = regex_pattern_set_reference_statement.value.field_to_match != null ? [regex_pattern_set_reference_statement.value.field_to_match] : []
@@ -4154,8 +5289,88 @@ resource "aws_wafv2_web_acl" "default" {
                           }
                         }
                         dynamic "not_statement" {
-                          for_each = nested_statement.value.type == "not_byte_match_statement" || nested_statement.value.type == "not_label_match_statement" || nested_statement.value.type == "not_regex_pattern_set_reference_statement" ? [1] : []
+                          for_each = nested_statement.value.type == "not_byte_match_statement" || nested_statement.value.type == "not_label_match_statement" || nested_statement.value.type == "not_regex_pattern_set_reference_statement" || nested_statement.value.type == "not_size_constraint_statement" ? [1] : []
                           content {
+                            dynamic "statement" {
+                              iterator = nested_not_statement
+                              for_each = nested_statement.value.type != null && nested_statement.value.type == "not_size_constraint_statement" ? [1] : []
+                              content {
+                                dynamic "size_constraint_statement" {
+                                  for_each = nested_statement.value.type == "not_size_constraint_statement" ? [jsondecode(nested_statement.value.statement)] : []
+                                  content {
+                                    comparison_operator = size_constraint_statement.value.comparison_operator
+                                    size                = size_constraint_statement.value.size
+
+                                    dynamic "field_to_match" {
+                                      for_each = size_constraint_statement.value.field_to_match != null ? [size_constraint_statement.value.field_to_match] : []
+
+                                      content {
+                                        dynamic "all_query_arguments" {
+                                          for_each = lookup(field_to_match.value, "all_query_arguments", null) != null ? [1] : []
+
+                                          content {}
+                                        }
+
+                                        dynamic "body" {
+                                          for_each = lookup(field_to_match.value, "body", null) != null ? [1] : []
+
+                                          content {
+                                            # Oversize handling tells AWS WAF what to do with a web request when the request component that the rule inspects is over the limits.
+                                            # WAF does not support inspecting the entire contents of the body of a web request when the body exceeds 8 KB (8192 bytes).
+                                            # Only the first 8 KB of the request body are forwarded to WAF by the underlying host service
+                                            # Valid values include the following: CONTINUE, MATCH, NO_MATCH
+                                            oversize_handling = try(field_to_match.value.body.oversize_handling, "CONTINUE")
+                                          }
+                                        }
+
+                                        dynamic "method" {
+                                          for_each = lookup(field_to_match.value, "method", null) != null ? [1] : []
+
+                                          content {}
+                                        }
+
+                                        dynamic "query_string" {
+                                          for_each = lookup(field_to_match.value, "query_string", null) != null ? [1] : []
+
+                                          content {}
+                                        }
+
+                                        dynamic "single_header" {
+                                          for_each = lookup(field_to_match.value, "single_header", null) != null ? [field_to_match.value.single_header] : []
+
+                                          content {
+                                            name = single_header.value.name
+                                          }
+                                        }
+
+                                        dynamic "single_query_argument" {
+                                          for_each = lookup(field_to_match.value, "single_query_argument", null) != null ? [field_to_match.value.single_query_argument] : []
+
+                                          content {
+                                            name = single_query_argument.value.name
+                                          }
+                                        }
+
+                                        dynamic "uri_path" {
+                                          for_each = lookup(field_to_match.value, "uri_path", null) != null ? [1] : []
+
+                                          content {}
+                                        }
+                                      }
+                                    }
+
+                                    dynamic "text_transformation" {
+                                      for_each = size_constraint_statement.value.text_transformation != null ? size_constraint_statement.value.text_transformation : []
+
+                                      content {
+                                        priority = text_transformation.value.priority
+                                        type     = text_transformation.value.type
+                                      }
+                                    }
+                                  }
+                                }
+                              }
+                            }
                             dynamic "statement" {
                               iterator = nested_not_statement
                               for_each = nested_statement.value.type != null && nested_statement.value.type == "not_byte_match_statement" ? [1] : []
@@ -4266,7 +5481,7 @@ resource "aws_wafv2_web_acl" "default" {
                                 dynamic "regex_pattern_set_reference_statement" {
                                   for_each = nested_statement.value.type == "not_regex_pattern_set_reference_statement" ? [jsondecode(nested_statement.value.statement)] : []
                                   content {
-                                    arn = try(aws_wafv2_regex_pattern_set.default[local.regex_rule_to_reusable_regex_pattern_set[regex_pattern_set_reference_statement.value.set_name]], null) != null ? aws_wafv2_regex_pattern_set.default[local.regex_rule_to_reusable_regex_pattern_set[regex_pattern_set_reference_statement.value.set_name]].arn : (try(aws_wafv2_regex_pattern_set.default[local.regex_rule_to_regex_pattern_set[rule.key]], null) != null ? aws_wafv2_regex_pattern_set.default[local.regex_rule_to_regex_pattern_set[rule.key]].arn : try(regex_pattern_set_reference_statement.value.arnement.value.arn, null))
+                                    arn = try(aws_wafv2_regex_pattern_set.default[local.regex_rule_to_reusable_regex_pattern_set[regex_pattern_set_reference_statement.value.set_name]], null) != null ? aws_wafv2_regex_pattern_set.default[local.regex_rule_to_reusable_regex_pattern_set[regex_pattern_set_reference_statement.value.set_name]].arn : (try(aws_wafv2_regex_pattern_set.default[local.regex_rule_to_regex_pattern_set[rule.key]], null) != null ? aws_wafv2_regex_pattern_set.default[local.regex_rule_to_regex_pattern_set[rule.key]].arn : try(regex_pattern_set_reference_statement.value.arn, null))
 
                                     dynamic "field_to_match" {
                                       for_each = regex_pattern_set_reference_statement.value.field_to_match != null ? [regex_pattern_set_reference_statement.value.field_to_match] : []
@@ -4360,6 +5575,80 @@ resource "aws_wafv2_web_acl" "default" {
                       iterator = nested_statement
                       for_each = or_statement.value.statements
                       content {
+                        dynamic "size_constraint_statement" {
+                          for_each = nested_statement.value.type == "size_constraint_statement" ? [jsondecode(nested_statement.value.statement)] : []
+                          content {
+                            comparison_operator = size_constraint_statement.value.comparison_operator
+                            size                = size_constraint_statement.value.size
+
+                            dynamic "field_to_match" {
+                              for_each = size_constraint_statement.value.field_to_match != null ? [size_constraint_statement.value.field_to_match] : []
+
+                              content {
+                                dynamic "all_query_arguments" {
+                                  for_each = lookup(field_to_match.value, "all_query_arguments", null) != null ? [1] : []
+
+                                  content {}
+                                }
+
+                                dynamic "body" {
+                                  for_each = lookup(field_to_match.value, "body", null) != null ? [1] : []
+
+                                  content {
+                                    # Oversize handling tells AWS WAF what to do with a web request when the request component that the rule inspects is over the limits.
+                                    # WAF does not support inspecting the entire contents of the body of a web request when the body exceeds 8 KB (8192 bytes).
+                                    # Only the first 8 KB of the request body are forwarded to WAF by the underlying host service
+                                    # Valid values include the following: CONTINUE, MATCH, NO_MATCH
+                                    oversize_handling = try(field_to_match.value.body.oversize_handling, "CONTINUE")
+                                  }
+                                }
+
+                                dynamic "method" {
+                                  for_each = lookup(field_to_match.value, "method", null) != null ? [1] : []
+
+                                  content {}
+                                }
+
+                                dynamic "query_string" {
+                                  for_each = lookup(field_to_match.value, "query_string", null) != null ? [1] : []
+
+                                  content {}
+                                }
+
+                                dynamic "single_header" {
+                                  for_each = lookup(field_to_match.value, "single_header", null) != null ? [field_to_match.value.single_header] : []
+
+                                  content {
+                                    name = single_header.value.name
+                                  }
+                                }
+
+                                dynamic "single_query_argument" {
+                                  for_each = lookup(field_to_match.value, "single_query_argument", null) != null ? [field_to_match.value.single_query_argument] : []
+
+                                  content {
+                                    name = single_query_argument.value.name
+                                  }
+                                }
+
+                                dynamic "uri_path" {
+                                  for_each = lookup(field_to_match.value, "uri_path", null) != null ? [1] : []
+
+                                  content {}
+                                }
+                              }
+                            }
+
+                            dynamic "text_transformation" {
+                              for_each = size_constraint_statement.value.text_transformation != null ? size_constraint_statement.value.text_transformation : []
+
+                              content {
+                                priority = text_transformation.value.priority
+                                type     = text_transformation.value.type
+                              }
+                            }
+                          }
+                        }
                         dynamic "byte_match_statement" {
                           for_each = nested_statement.value.type == "byte_match_statement" ? [jsondecode(nested_statement.value.statement)] : []
                           content {
@@ -4447,7 +5736,7 @@ resource "aws_wafv2_web_acl" "default" {
                         dynamic "regex_pattern_set_reference_statement" {
                           for_each = nested_statement.value.type == "regex_pattern_set_reference_statement" ? [jsondecode(nested_statement.value.statement)] : []
                           content {
-                            arn = try(aws_wafv2_regex_pattern_set.default[local.regex_rule_to_reusable_regex_pattern_set[regex_pattern_set_reference_statement.value.set_name]], null) != null ? aws_wafv2_regex_pattern_set.default[local.regex_rule_to_reusable_regex_pattern_set[regex_pattern_set_reference_statement.value.set_name]].arn : (try(aws_wafv2_regex_pattern_set.default[local.regex_rule_to_regex_pattern_set[rule.key]], null) != null ? aws_wafv2_regex_pattern_set.default[local.regex_rule_to_regex_pattern_set[rule.key]].arn : try(regex_pattern_set_reference_statement.value.arnement.value.arn, null))
+                            arn = try(aws_wafv2_regex_pattern_set.default[local.regex_rule_to_reusable_regex_pattern_set[regex_pattern_set_reference_statement.value.set_name]], null) != null ? aws_wafv2_regex_pattern_set.default[local.regex_rule_to_reusable_regex_pattern_set[regex_pattern_set_reference_statement.value.set_name]].arn : (try(aws_wafv2_regex_pattern_set.default[local.regex_rule_to_regex_pattern_set[rule.key]], null) != null ? aws_wafv2_regex_pattern_set.default[local.regex_rule_to_regex_pattern_set[rule.key]].arn : try(regex_pattern_set_reference_statement.value.arn, null))
 
                             dynamic "field_to_match" {
                               for_each = regex_pattern_set_reference_statement.value.field_to_match != null ? [regex_pattern_set_reference_statement.value.field_to_match] : []
@@ -4534,13 +5823,92 @@ resource "aws_wafv2_web_acl" "default" {
                           }
                         }
                         dynamic "not_statement" {
-                          for_each = nested_statement.value.type == "not_byte_match_statement" || nested_statement.value.type == "not_label_match_statement" || nested_statement.value.type == "not_regex_pattern_set_reference_statement" ? [1] : []
+                          for_each = nested_statement.value.type == "not_byte_match_statement" || nested_statement.value.type == "not_label_match_statement" || nested_statement.value.type == "not_regex_pattern_set_reference_statement" || nested_statement.value.type == "not_size_constraint_statement" ? [1] : []
                           content {
+                            dynamic "statement" {
+                              iterator = nested_not_statement
+                              for_each = nested_statement.value.type != null && nested_statement.value.type == "not_size_constraint_statement" ? [1] : []
+                              content {
+                                dynamic "size_constraint_statement" {
+                                  for_each = nested_statement.value.type == "not_size_constraint_statement" ? [jsondecode(nested_statement.value.statement)] : []
+                                  content {
+                                    comparison_operator = size_constraint_statement.value.comparison_operator
+                                    size                = size_constraint_statement.value.size
+
+                                    dynamic "field_to_match" {
+                                      for_each = size_constraint_statement.value.field_to_match != null ? [size_constraint_statement.value.field_to_match] : []
+
+                                      content {
+                                        dynamic "all_query_arguments" {
+                                          for_each = lookup(field_to_match.value, "all_query_arguments", null) != null ? [1] : []
+
+                                          content {}
+                                        }
+
+                                        dynamic "body" {
+                                          for_each = lookup(field_to_match.value, "body", null) != null ? [1] : []
+
+                                          content {
+                                            # Oversize handling tells AWS WAF what to do with a web request when the request component that the rule inspects is over the limits.
+                                            # WAF does not support inspecting the entire contents of the body of a web request when the body exceeds 8 KB (8192 bytes).
+                                            # Only the first 8 KB of the request body are forwarded to WAF by the underlying host service
+                                            # Valid values include the following: CONTINUE, MATCH, NO_MATCH
+                                            oversize_handling = try(field_to_match.value.body.oversize_handling, "CONTINUE")
+                                          }
+                                        }
+
+                                        dynamic "method" {
+                                          for_each = lookup(field_to_match.value, "method", null) != null ? [1] : []
+
+                                          content {}
+                                        }
+
+                                        dynamic "query_string" {
+                                          for_each = lookup(field_to_match.value, "query_string", null) != null ? [1] : []
+
+                                          content {}
+                                        }
+
+                                        dynamic "single_header" {
+                                          for_each = lookup(field_to_match.value, "single_header", null) != null ? [field_to_match.value.single_header] : []
+
+                                          content {
+                                            name = single_header.value.name
+                                          }
+                                        }
+
+                                        dynamic "single_query_argument" {
+                                          for_each = lookup(field_to_match.value, "single_query_argument", null) != null ? [field_to_match.value.single_query_argument] : []
+
+                                          content {
+                                            name = single_query_argument.value.name
+                                          }
+                                        }
+
+                                        dynamic "uri_path" {
+                                          for_each = lookup(field_to_match.value, "uri_path", null) != null ? [1] : []
+
+                                          content {}
+                                        }
+                                      }
+                                    }
+
+                                    dynamic "text_transformation" {
+                                      for_each = size_constraint_statement.value.text_transformation != null ? size_constraint_statement.value.text_transformation : []
+
+                                      content {
+                                        priority = text_transformation.value.priority
+                                        type     = text_transformation.value.type
+                                      }
+                                    }
+                                  }
+                                }
+                              }
+                            }
                             dynamic "statement" {
                               iterator = nested_not_statement
                               for_each = nested_statement.value.type != null && nested_statement.value.type == "not_byte_match_statement" ? [1] : []
                               content {
-
                                 dynamic "byte_match_statement" {
                                   for_each = nested_statement.value.type == "not_byte_match_statement" ? [jsondecode(nested_statement.value.statement)] : []
                                   content {
@@ -4646,7 +6014,7 @@ resource "aws_wafv2_web_acl" "default" {
                                 dynamic "regex_pattern_set_reference_statement" {
                                   for_each = nested_statement.value.type == "not_regex_pattern_set_reference_statement" ? [jsondecode(nested_statement.value.statement)] : []
                                   content {
-                                    arn = try(aws_wafv2_regex_pattern_set.default[local.regex_rule_to_reusable_regex_pattern_set[regex_pattern_set_reference_statement.value.set_name]], null) != null ? aws_wafv2_regex_pattern_set.default[local.regex_rule_to_reusable_regex_pattern_set[regex_pattern_set_reference_statement.value.set_name]].arn : (try(aws_wafv2_regex_pattern_set.default[local.regex_rule_to_regex_pattern_set[rule.key]], null) != null ? aws_wafv2_regex_pattern_set.default[local.regex_rule_to_regex_pattern_set[rule.key]].arn : try(regex_pattern_set_reference_statement.value.arnement.value.arn, null))
+                                    arn = try(aws_wafv2_regex_pattern_set.default[local.regex_rule_to_reusable_regex_pattern_set[regex_pattern_set_reference_statement.value.set_name]], null) != null ? aws_wafv2_regex_pattern_set.default[local.regex_rule_to_reusable_regex_pattern_set[regex_pattern_set_reference_statement.value.set_name]].arn : (try(aws_wafv2_regex_pattern_set.default[local.regex_rule_to_regex_pattern_set[rule.key]], null) != null ? aws_wafv2_regex_pattern_set.default[local.regex_rule_to_regex_pattern_set[rule.key]].arn : try(regex_pattern_set_reference_statement.value.arn, null))
 
                                     dynamic "field_to_match" {
                                       for_each = regex_pattern_set_reference_statement.value.field_to_match != null ? [regex_pattern_set_reference_statement.value.field_to_match] : []
@@ -5204,7 +6572,7 @@ resource "aws_wafv2_web_acl" "default" {
                 dynamic "regex_pattern_set_reference_statement" {
                   for_each = scope_down_statement.value.regex_pattern_set_reference_statement != null ? [scope_down_statement.value.regex_pattern_set_reference_statement] : []
                   content {
-                    arn = try(aws_wafv2_regex_pattern_set.default[local.regex_rule_to_reusable_regex_pattern_set[regex_pattern_set_reference_statement.value.set_name]], null) != null ? aws_wafv2_regex_pattern_set.default[local.regex_rule_to_reusable_regex_pattern_set[regex_pattern_set_reference_statement.value.set_name]].arn : (try(aws_wafv2_regex_pattern_set.default[local.regex_rule_to_regex_pattern_set[rule.key]], null) != null ? aws_wafv2_regex_pattern_set.default[local.regex_rule_to_regex_pattern_set[rule.key]].arn : try(regex_pattern_set_reference_statement.value.arnement.value.arn, null))
+                    arn = try(aws_wafv2_regex_pattern_set.default[local.regex_rule_to_reusable_regex_pattern_set[regex_pattern_set_reference_statement.value.set_name]], null) != null ? aws_wafv2_regex_pattern_set.default[local.regex_rule_to_reusable_regex_pattern_set[regex_pattern_set_reference_statement.value.set_name]].arn : (try(aws_wafv2_regex_pattern_set.default[local.regex_rule_to_regex_pattern_set[rule.key]], null) != null ? aws_wafv2_regex_pattern_set.default[local.regex_rule_to_regex_pattern_set[rule.key]].arn : try(regex_pattern_set_reference_statement.value.arn, null))
 
                     dynamic "field_to_match" {
                       for_each = regex_pattern_set_reference_statement.value.field_to_match != null ? [regex_pattern_set_reference_statement.value.field_to_match] : []
@@ -5288,6 +6656,80 @@ resource "aws_wafv2_web_acl" "default" {
                   content {
                     scope = label_match_statement.value.scope
                     key   = label_match_statement.value.key
+                  }
+                }
+                dynamic "size_constraint_statement" {
+                  for_each = scope_down_statement.value.size_constraint_statement != null ? [scope_down_statement.value.size_constraint_statement] : []
+                  content {
+                    comparison_operator = size_constraint_statement.value.comparison_operator
+                    size                = size_constraint_statement.value.size
+
+                    dynamic "field_to_match" {
+                      for_each = size_constraint_statement.value.field_to_match != null ? [size_constraint_statement.value.field_to_match] : []
+
+                      content {
+                        dynamic "all_query_arguments" {
+                          for_each = lookup(field_to_match.value, "all_query_arguments", null) != null ? [1] : []
+
+                          content {}
+                        }
+
+                        dynamic "body" {
+                          for_each = lookup(field_to_match.value, "body", null) != null ? [1] : []
+
+                          content {
+                            # Oversize handling tells AWS WAF what to do with a web request when the request component that the rule inspects is over the limits.
+                            # WAF does not support inspecting the entire contents of the body of a web request when the body exceeds 8 KB (8192 bytes).
+                            # Only the first 8 KB of the request body are forwarded to WAF by the underlying host service
+                            # Valid values include the following: CONTINUE, MATCH, NO_MATCH
+                            oversize_handling = try(field_to_match.value.body.oversize_handling, "CONTINUE")
+                          }
+                        }
+
+                        dynamic "method" {
+                          for_each = lookup(field_to_match.value, "method", null) != null ? [1] : []
+
+                          content {}
+                        }
+
+                        dynamic "query_string" {
+                          for_each = lookup(field_to_match.value, "query_string", null) != null ? [1] : []
+
+                          content {}
+                        }
+
+                        dynamic "single_header" {
+                          for_each = lookup(field_to_match.value, "single_header", null) != null ? [field_to_match.value.single_header] : []
+
+                          content {
+                            name = single_header.value.name
+                          }
+                        }
+
+                        dynamic "single_query_argument" {
+                          for_each = lookup(field_to_match.value, "single_query_argument", null) != null ? [field_to_match.value.single_query_argument] : []
+
+                          content {
+                            name = single_query_argument.value.name
+                          }
+                        }
+
+                        dynamic "uri_path" {
+                          for_each = lookup(field_to_match.value, "uri_path", null) != null ? [1] : []
+
+                          content {}
+                        }
+                      }
+                    }
+
+                    dynamic "text_transformation" {
+                      for_each = size_constraint_statement.value.text_transformation != null ? size_constraint_statement.value.text_transformation : []
+
+                      content {
+                        priority = text_transformation.value.priority
+                        type     = text_transformation.value.type
+                      }
+                    }
                   }
                 }
                 dynamic "byte_match_statement" {
@@ -5375,8 +6817,87 @@ resource "aws_wafv2_web_acl" "default" {
                   }
                 }
                 dynamic "not_statement" {
-                  for_each = scope_down_statement.value.not_byte_match_statement != null || scope_down_statement.value.not_label_match_statement != null || scope_down_statement.value.not_regex_pattern_set_reference_statement != null ? [1] : []
+                  for_each = scope_down_statement.value.not_byte_match_statement != null || scope_down_statement.value.not_label_match_statement != null || scope_down_statement.value.not_regex_pattern_set_reference_statement != null || scope_down_statement.value.not_size_constraint_statement != null ? [1] : []
                   content {
+                    dynamic "statement" {
+                      for_each = scope_down_statement.value.not_size_constraint_statement != null ? [1] : []
+                      content {
+                        dynamic "size_constraint_statement" {
+                          for_each = scope_down_statement.value.not_size_constraint_statement != null ? [scope_down_statement.value.not_size_constraint_statement] : []
+                          content {
+                            comparison_operator = size_constraint_statement.value.comparison_operator
+                            size                = size_constraint_statement.value.size
+
+                            dynamic "field_to_match" {
+                              for_each = size_constraint_statement.value.field_to_match != null ? [size_constraint_statement.value.field_to_match] : []
+
+                              content {
+                                dynamic "all_query_arguments" {
+                                  for_each = lookup(field_to_match.value, "all_query_arguments", null) != null ? [1] : []
+
+                                  content {}
+                                }
+
+                                dynamic "body" {
+                                  for_each = lookup(field_to_match.value, "body", null) != null ? [1] : []
+
+                                  content {
+                                    # Oversize handling tells AWS WAF what to do with a web request when the request component that the rule inspects is over the limits.
+                                    # WAF does not support inspecting the entire contents of the body of a web request when the body exceeds 8 KB (8192 bytes).
+                                    # Only the first 8 KB of the request body are forwarded to WAF by the underlying host service
+                                    # Valid values include the following: CONTINUE, MATCH, NO_MATCH
+                                    oversize_handling = try(field_to_match.value.body.oversize_handling, "CONTINUE")
+                                  }
+                                }
+
+                                dynamic "method" {
+                                  for_each = lookup(field_to_match.value, "method", null) != null ? [1] : []
+
+                                  content {}
+                                }
+
+                                dynamic "query_string" {
+                                  for_each = lookup(field_to_match.value, "query_string", null) != null ? [1] : []
+
+                                  content {}
+                                }
+
+                                dynamic "single_header" {
+                                  for_each = lookup(field_to_match.value, "single_header", null) != null ? [field_to_match.value.single_header] : []
+
+                                  content {
+                                    name = single_header.value.name
+                                  }
+                                }
+
+                                dynamic "single_query_argument" {
+                                  for_each = lookup(field_to_match.value, "single_query_argument", null) != null ? [field_to_match.value.single_query_argument] : []
+
+                                  content {
+                                    name = single_query_argument.value.name
+                                  }
+                                }
+
+                                dynamic "uri_path" {
+                                  for_each = lookup(field_to_match.value, "uri_path", null) != null ? [1] : []
+
+                                  content {}
+                                }
+                              }
+                            }
+
+                            dynamic "text_transformation" {
+                              for_each = size_constraint_statement.value.text_transformation != null ? size_constraint_statement.value.text_transformation : []
+
+                              content {
+                                priority = text_transformation.value.priority
+                                type     = text_transformation.value.type
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
                     dynamic "statement" {
                       for_each = scope_down_statement.value.not_byte_match_statement != null ? [1] : []
                       content {
@@ -5483,7 +7004,7 @@ resource "aws_wafv2_web_acl" "default" {
                         dynamic "regex_pattern_set_reference_statement" {
                           for_each = statement.value.not_regex_pattern_set_reference_statement != null ? [statement.value.not_regex_pattern_set_reference_statement] : []
                           content {
-                            arn = try(aws_wafv2_regex_pattern_set.default[local.regex_rule_to_reusable_regex_pattern_set[regex_pattern_set_reference_statement.value.set_name]], null) != null ? aws_wafv2_regex_pattern_set.default[local.regex_rule_to_reusable_regex_pattern_set[regex_pattern_set_reference_statement.value.set_name]].arn : (try(aws_wafv2_regex_pattern_set.default[local.regex_rule_to_regex_pattern_set[rule.key]], null) != null ? aws_wafv2_regex_pattern_set.default[local.regex_rule_to_regex_pattern_set[rule.key]].arn : try(regex_pattern_set_reference_statement.value.arnement.value.arn, null))
+                            arn = try(aws_wafv2_regex_pattern_set.default[local.regex_rule_to_reusable_regex_pattern_set[regex_pattern_set_reference_statement.value.set_name]], null) != null ? aws_wafv2_regex_pattern_set.default[local.regex_rule_to_reusable_regex_pattern_set[regex_pattern_set_reference_statement.value.set_name]].arn : (try(aws_wafv2_regex_pattern_set.default[local.regex_rule_to_regex_pattern_set[rule.key]], null) != null ? aws_wafv2_regex_pattern_set.default[local.regex_rule_to_regex_pattern_set[rule.key]].arn : try(regex_pattern_set_reference_statement.value.arn, null))
 
                             dynamic "field_to_match" {
                               for_each = regex_pattern_set_reference_statement.value.field_to_match != null ? [regex_pattern_set_reference_statement.value.field_to_match] : []
@@ -5574,6 +7095,80 @@ resource "aws_wafv2_web_acl" "default" {
                       iterator = nested_statement
                       for_each = and_statement.value.statements
                       content {
+                        dynamic "size_constraint_statement" {
+                          for_each = nested_statement.value.type == "size_constraint_statement" ? [jsondecode(nested_statement.value.statement)] : []
+                          content {
+                            comparison_operator = size_constraint_statement.value.comparison_operator
+                            size                = size_constraint_statement.value.size
+
+                            dynamic "field_to_match" {
+                              for_each = size_constraint_statement.value.field_to_match != null ? [size_constraint_statement.value.field_to_match] : []
+
+                              content {
+                                dynamic "all_query_arguments" {
+                                  for_each = lookup(field_to_match.value, "all_query_arguments", null) != null ? [1] : []
+
+                                  content {}
+                                }
+
+                                dynamic "body" {
+                                  for_each = lookup(field_to_match.value, "body", null) != null ? [1] : []
+
+                                  content {
+                                    # Oversize handling tells AWS WAF what to do with a web request when the request component that the rule inspects is over the limits.
+                                    # WAF does not support inspecting the entire contents of the body of a web request when the body exceeds 8 KB (8192 bytes).
+                                    # Only the first 8 KB of the request body are forwarded to WAF by the underlying host service
+                                    # Valid values include the following: CONTINUE, MATCH, NO_MATCH
+                                    oversize_handling = try(field_to_match.value.body.oversize_handling, "CONTINUE")
+                                  }
+                                }
+
+                                dynamic "method" {
+                                  for_each = lookup(field_to_match.value, "method", null) != null ? [1] : []
+
+                                  content {}
+                                }
+
+                                dynamic "query_string" {
+                                  for_each = lookup(field_to_match.value, "query_string", null) != null ? [1] : []
+
+                                  content {}
+                                }
+
+                                dynamic "single_header" {
+                                  for_each = lookup(field_to_match.value, "single_header", null) != null ? [field_to_match.value.single_header] : []
+
+                                  content {
+                                    name = single_header.value.name
+                                  }
+                                }
+
+                                dynamic "single_query_argument" {
+                                  for_each = lookup(field_to_match.value, "single_query_argument", null) != null ? [field_to_match.value.single_query_argument] : []
+
+                                  content {
+                                    name = single_query_argument.value.name
+                                  }
+                                }
+
+                                dynamic "uri_path" {
+                                  for_each = lookup(field_to_match.value, "uri_path", null) != null ? [1] : []
+
+                                  content {}
+                                }
+                              }
+                            }
+
+                            dynamic "text_transformation" {
+                              for_each = size_constraint_statement.value.text_transformation != null ? size_constraint_statement.value.text_transformation : []
+
+                              content {
+                                priority = text_transformation.value.priority
+                                type     = text_transformation.value.type
+                              }
+                            }
+                          }
+                        }
                         dynamic "byte_match_statement" {
                           for_each = nested_statement.value.type == "byte_match_statement" ? [jsondecode(nested_statement.value.statement)] : []
                           content {
@@ -5661,7 +7256,7 @@ resource "aws_wafv2_web_acl" "default" {
                         dynamic "regex_pattern_set_reference_statement" {
                           for_each = nested_statement.value.type == "regex_pattern_set_reference_statement" ? [jsondecode(nested_statement.value.statement)] : []
                           content {
-                            arn = try(aws_wafv2_regex_pattern_set.default[local.regex_rule_to_reusable_regex_pattern_set[regex_pattern_set_reference_statement.value.set_name]], null) != null ? aws_wafv2_regex_pattern_set.default[local.regex_rule_to_reusable_regex_pattern_set[regex_pattern_set_reference_statement.value.set_name]].arn : (try(aws_wafv2_regex_pattern_set.default[local.regex_rule_to_regex_pattern_set[rule.key]], null) != null ? aws_wafv2_regex_pattern_set.default[local.regex_rule_to_regex_pattern_set[rule.key]].arn : try(regex_pattern_set_reference_statement.value.arnement.value.arn, null))
+                            arn = try(aws_wafv2_regex_pattern_set.default[local.regex_rule_to_reusable_regex_pattern_set[regex_pattern_set_reference_statement.value.set_name]], null) != null ? aws_wafv2_regex_pattern_set.default[local.regex_rule_to_reusable_regex_pattern_set[regex_pattern_set_reference_statement.value.set_name]].arn : (try(aws_wafv2_regex_pattern_set.default[local.regex_rule_to_regex_pattern_set[rule.key]], null) != null ? aws_wafv2_regex_pattern_set.default[local.regex_rule_to_regex_pattern_set[rule.key]].arn : try(regex_pattern_set_reference_statement.value.arn, null))
 
                             dynamic "field_to_match" {
                               for_each = regex_pattern_set_reference_statement.value.field_to_match != null ? [regex_pattern_set_reference_statement.value.field_to_match] : []
@@ -5748,8 +7343,88 @@ resource "aws_wafv2_web_acl" "default" {
                           }
                         }
                         dynamic "not_statement" {
-                          for_each = nested_statement.value.type == "not_byte_match_statement" || nested_statement.value.type == "not_label_match_statement" || nested_statement.value.type == "not_regex_pattern_set_reference_statement" ? [1] : []
+                          for_each = nested_statement.value.type == "not_byte_match_statement" || nested_statement.value.type == "not_label_match_statement" || nested_statement.value.type == "not_regex_pattern_set_reference_statement" || nested_statement.value.type == "not_size_constraint_statement" ? [1] : []
                           content {
+                            dynamic "statement" {
+                              iterator = nested_not_statement
+                              for_each = nested_statement.value.type != null && nested_statement.value.type == "not_size_constraint_statement" ? [1] : []
+                              content {
+                                dynamic "size_constraint_statement" {
+                                  for_each = nested_statement.value.type == "not_size_constraint_statement" ? [jsondecode(nested_statement.value.statement)] : []
+                                  content {
+                                    comparison_operator = size_constraint_statement.value.comparison_operator
+                                    size                = size_constraint_statement.value.size
+
+                                    dynamic "field_to_match" {
+                                      for_each = size_constraint_statement.value.field_to_match != null ? [size_constraint_statement.value.field_to_match] : []
+
+                                      content {
+                                        dynamic "all_query_arguments" {
+                                          for_each = lookup(field_to_match.value, "all_query_arguments", null) != null ? [1] : []
+
+                                          content {}
+                                        }
+
+                                        dynamic "body" {
+                                          for_each = lookup(field_to_match.value, "body", null) != null ? [1] : []
+
+                                          content {
+                                            # Oversize handling tells AWS WAF what to do with a web request when the request component that the rule inspects is over the limits.
+                                            # WAF does not support inspecting the entire contents of the body of a web request when the body exceeds 8 KB (8192 bytes).
+                                            # Only the first 8 KB of the request body are forwarded to WAF by the underlying host service
+                                            # Valid values include the following: CONTINUE, MATCH, NO_MATCH
+                                            oversize_handling = try(field_to_match.value.body.oversize_handling, "CONTINUE")
+                                          }
+                                        }
+
+                                        dynamic "method" {
+                                          for_each = lookup(field_to_match.value, "method", null) != null ? [1] : []
+
+                                          content {}
+                                        }
+
+                                        dynamic "query_string" {
+                                          for_each = lookup(field_to_match.value, "query_string", null) != null ? [1] : []
+
+                                          content {}
+                                        }
+
+                                        dynamic "single_header" {
+                                          for_each = lookup(field_to_match.value, "single_header", null) != null ? [field_to_match.value.single_header] : []
+
+                                          content {
+                                            name = single_header.value.name
+                                          }
+                                        }
+
+                                        dynamic "single_query_argument" {
+                                          for_each = lookup(field_to_match.value, "single_query_argument", null) != null ? [field_to_match.value.single_query_argument] : []
+
+                                          content {
+                                            name = single_query_argument.value.name
+                                          }
+                                        }
+
+                                        dynamic "uri_path" {
+                                          for_each = lookup(field_to_match.value, "uri_path", null) != null ? [1] : []
+
+                                          content {}
+                                        }
+                                      }
+                                    }
+
+                                    dynamic "text_transformation" {
+                                      for_each = size_constraint_statement.value.text_transformation != null ? size_constraint_statement.value.text_transformation : []
+
+                                      content {
+                                        priority = text_transformation.value.priority
+                                        type     = text_transformation.value.type
+                                      }
+                                    }
+                                  }
+                                }
+                              }
+                            }
                             dynamic "statement" {
                               iterator = nested_not_statement
                               for_each = nested_statement.value.type != null && nested_statement.value.type == "not_byte_match_statement" ? [1] : []
@@ -5860,7 +7535,7 @@ resource "aws_wafv2_web_acl" "default" {
                                 dynamic "regex_pattern_set_reference_statement" {
                                   for_each = nested_statement.value.type == "not_regex_pattern_set_reference_statement" ? [jsondecode(nested_statement.value.statement)] : []
                                   content {
-                                    arn = try(aws_wafv2_regex_pattern_set.default[local.regex_rule_to_reusable_regex_pattern_set[regex_pattern_set_reference_statement.value.set_name]], null) != null ? aws_wafv2_regex_pattern_set.default[local.regex_rule_to_reusable_regex_pattern_set[regex_pattern_set_reference_statement.value.set_name]].arn : (try(aws_wafv2_regex_pattern_set.default[local.regex_rule_to_regex_pattern_set[rule.key]], null) != null ? aws_wafv2_regex_pattern_set.default[local.regex_rule_to_regex_pattern_set[rule.key]].arn : try(regex_pattern_set_reference_statement.value.arnement.value.arn, null))
+                                    arn = try(aws_wafv2_regex_pattern_set.default[local.regex_rule_to_reusable_regex_pattern_set[regex_pattern_set_reference_statement.value.set_name]], null) != null ? aws_wafv2_regex_pattern_set.default[local.regex_rule_to_reusable_regex_pattern_set[regex_pattern_set_reference_statement.value.set_name]].arn : (try(aws_wafv2_regex_pattern_set.default[local.regex_rule_to_regex_pattern_set[rule.key]], null) != null ? aws_wafv2_regex_pattern_set.default[local.regex_rule_to_regex_pattern_set[rule.key]].arn : try(regex_pattern_set_reference_statement.value.arn, null))
 
                                     dynamic "field_to_match" {
                                       for_each = regex_pattern_set_reference_statement.value.field_to_match != null ? [regex_pattern_set_reference_statement.value.field_to_match] : []
@@ -5954,6 +7629,80 @@ resource "aws_wafv2_web_acl" "default" {
                       iterator = nested_statement
                       for_each = or_statement.value.statements
                       content {
+                        dynamic "size_constraint_statement" {
+                          for_each = nested_statement.value.type == "size_constraint_statement" ? [jsondecode(nested_statement.value.statement)] : []
+                          content {
+                            comparison_operator = size_constraint_statement.value.comparison_operator
+                            size                = size_constraint_statement.value.size
+
+                            dynamic "field_to_match" {
+                              for_each = size_constraint_statement.value.field_to_match != null ? [size_constraint_statement.value.field_to_match] : []
+
+                              content {
+                                dynamic "all_query_arguments" {
+                                  for_each = lookup(field_to_match.value, "all_query_arguments", null) != null ? [1] : []
+
+                                  content {}
+                                }
+
+                                dynamic "body" {
+                                  for_each = lookup(field_to_match.value, "body", null) != null ? [1] : []
+
+                                  content {
+                                    # Oversize handling tells AWS WAF what to do with a web request when the request component that the rule inspects is over the limits.
+                                    # WAF does not support inspecting the entire contents of the body of a web request when the body exceeds 8 KB (8192 bytes).
+                                    # Only the first 8 KB of the request body are forwarded to WAF by the underlying host service
+                                    # Valid values include the following: CONTINUE, MATCH, NO_MATCH
+                                    oversize_handling = try(field_to_match.value.body.oversize_handling, "CONTINUE")
+                                  }
+                                }
+
+                                dynamic "method" {
+                                  for_each = lookup(field_to_match.value, "method", null) != null ? [1] : []
+
+                                  content {}
+                                }
+
+                                dynamic "query_string" {
+                                  for_each = lookup(field_to_match.value, "query_string", null) != null ? [1] : []
+
+                                  content {}
+                                }
+
+                                dynamic "single_header" {
+                                  for_each = lookup(field_to_match.value, "single_header", null) != null ? [field_to_match.value.single_header] : []
+
+                                  content {
+                                    name = single_header.value.name
+                                  }
+                                }
+
+                                dynamic "single_query_argument" {
+                                  for_each = lookup(field_to_match.value, "single_query_argument", null) != null ? [field_to_match.value.single_query_argument] : []
+
+                                  content {
+                                    name = single_query_argument.value.name
+                                  }
+                                }
+
+                                dynamic "uri_path" {
+                                  for_each = lookup(field_to_match.value, "uri_path", null) != null ? [1] : []
+
+                                  content {}
+                                }
+                              }
+                            }
+
+                            dynamic "text_transformation" {
+                              for_each = size_constraint_statement.value.text_transformation != null ? size_constraint_statement.value.text_transformation : []
+
+                              content {
+                                priority = text_transformation.value.priority
+                                type     = text_transformation.value.type
+                              }
+                            }
+                          }
+                        }
                         dynamic "byte_match_statement" {
                           for_each = nested_statement.value.type == "byte_match_statement" ? [jsondecode(nested_statement.value.statement)] : []
                           content {
@@ -6041,7 +7790,7 @@ resource "aws_wafv2_web_acl" "default" {
                         dynamic "regex_pattern_set_reference_statement" {
                           for_each = nested_statement.value.type == "regex_pattern_set_reference_statement" ? [jsondecode(nested_statement.value.statement)] : []
                           content {
-                            arn = try(aws_wafv2_regex_pattern_set.default[local.regex_rule_to_reusable_regex_pattern_set[regex_pattern_set_reference_statement.value.set_name]], null) != null ? aws_wafv2_regex_pattern_set.default[local.regex_rule_to_reusable_regex_pattern_set[regex_pattern_set_reference_statement.value.set_name]].arn : (try(aws_wafv2_regex_pattern_set.default[local.regex_rule_to_regex_pattern_set[rule.key]], null) != null ? aws_wafv2_regex_pattern_set.default[local.regex_rule_to_regex_pattern_set[rule.key]].arn : try(regex_pattern_set_reference_statement.value.arnement.value.arn, null))
+                            arn = try(aws_wafv2_regex_pattern_set.default[local.regex_rule_to_reusable_regex_pattern_set[regex_pattern_set_reference_statement.value.set_name]], null) != null ? aws_wafv2_regex_pattern_set.default[local.regex_rule_to_reusable_regex_pattern_set[regex_pattern_set_reference_statement.value.set_name]].arn : (try(aws_wafv2_regex_pattern_set.default[local.regex_rule_to_regex_pattern_set[rule.key]], null) != null ? aws_wafv2_regex_pattern_set.default[local.regex_rule_to_regex_pattern_set[rule.key]].arn : try(regex_pattern_set_reference_statement.value.arn, null))
 
                             dynamic "field_to_match" {
                               for_each = regex_pattern_set_reference_statement.value.field_to_match != null ? [regex_pattern_set_reference_statement.value.field_to_match] : []
@@ -6128,13 +7877,92 @@ resource "aws_wafv2_web_acl" "default" {
                           }
                         }
                         dynamic "not_statement" {
-                          for_each = nested_statement.value.type == "not_byte_match_statement" || nested_statement.value.type == "not_label_match_statement" || nested_statement.value.type == "not_regex_pattern_set_reference_statement" ? [1] : []
+                          for_each = nested_statement.value.type == "not_byte_match_statement" || nested_statement.value.type == "not_label_match_statement" || nested_statement.value.type == "not_regex_pattern_set_reference_statement" || nested_statement.value.type == "not_size_constraint_statement" ? [1] : []
                           content {
+                            dynamic "statement" {
+                              iterator = nested_not_statement
+                              for_each = nested_statement.value.type != null && nested_statement.value.type == "not_size_constraint_statement" ? [1] : []
+                              content {
+                                dynamic "size_constraint_statement" {
+                                  for_each = nested_statement.value.type == "not_size_constraint_statement" ? [jsondecode(nested_statement.value.statement)] : []
+                                  content {
+                                    comparison_operator = size_constraint_statement.value.comparison_operator
+                                    size                = size_constraint_statement.value.size
+
+                                    dynamic "field_to_match" {
+                                      for_each = size_constraint_statement.value.field_to_match != null ? [size_constraint_statement.value.field_to_match] : []
+
+                                      content {
+                                        dynamic "all_query_arguments" {
+                                          for_each = lookup(field_to_match.value, "all_query_arguments", null) != null ? [1] : []
+
+                                          content {}
+                                        }
+
+                                        dynamic "body" {
+                                          for_each = lookup(field_to_match.value, "body", null) != null ? [1] : []
+
+                                          content {
+                                            # Oversize handling tells AWS WAF what to do with a web request when the request component that the rule inspects is over the limits.
+                                            # WAF does not support inspecting the entire contents of the body of a web request when the body exceeds 8 KB (8192 bytes).
+                                            # Only the first 8 KB of the request body are forwarded to WAF by the underlying host service
+                                            # Valid values include the following: CONTINUE, MATCH, NO_MATCH
+                                            oversize_handling = try(field_to_match.value.body.oversize_handling, "CONTINUE")
+                                          }
+                                        }
+
+                                        dynamic "method" {
+                                          for_each = lookup(field_to_match.value, "method", null) != null ? [1] : []
+
+                                          content {}
+                                        }
+
+                                        dynamic "query_string" {
+                                          for_each = lookup(field_to_match.value, "query_string", null) != null ? [1] : []
+
+                                          content {}
+                                        }
+
+                                        dynamic "single_header" {
+                                          for_each = lookup(field_to_match.value, "single_header", null) != null ? [field_to_match.value.single_header] : []
+
+                                          content {
+                                            name = single_header.value.name
+                                          }
+                                        }
+
+                                        dynamic "single_query_argument" {
+                                          for_each = lookup(field_to_match.value, "single_query_argument", null) != null ? [field_to_match.value.single_query_argument] : []
+
+                                          content {
+                                            name = single_query_argument.value.name
+                                          }
+                                        }
+
+                                        dynamic "uri_path" {
+                                          for_each = lookup(field_to_match.value, "uri_path", null) != null ? [1] : []
+
+                                          content {}
+                                        }
+                                      }
+                                    }
+
+                                    dynamic "text_transformation" {
+                                      for_each = size_constraint_statement.value.text_transformation != null ? size_constraint_statement.value.text_transformation : []
+
+                                      content {
+                                        priority = text_transformation.value.priority
+                                        type     = text_transformation.value.type
+                                      }
+                                    }
+                                  }
+                                }
+                              }
+                            }
                             dynamic "statement" {
                               iterator = nested_not_statement
                               for_each = nested_statement.value.type != null && nested_statement.value.type == "not_byte_match_statement" ? [1] : []
                               content {
-
                                 dynamic "byte_match_statement" {
                                   for_each = nested_statement.value.type == "not_byte_match_statement" ? [jsondecode(nested_statement.value.statement)] : []
                                   content {
@@ -6240,7 +8068,7 @@ resource "aws_wafv2_web_acl" "default" {
                                 dynamic "regex_pattern_set_reference_statement" {
                                   for_each = nested_statement.value.type == "not_regex_pattern_set_reference_statement" ? [jsondecode(nested_statement.value.statement)] : []
                                   content {
-                                    arn = try(aws_wafv2_regex_pattern_set.default[local.regex_rule_to_reusable_regex_pattern_set[regex_pattern_set_reference_statement.value.set_name]], null) != null ? aws_wafv2_regex_pattern_set.default[local.regex_rule_to_reusable_regex_pattern_set[regex_pattern_set_reference_statement.value.set_name]].arn : (try(aws_wafv2_regex_pattern_set.default[local.regex_rule_to_regex_pattern_set[rule.key]], null) != null ? aws_wafv2_regex_pattern_set.default[local.regex_rule_to_regex_pattern_set[rule.key]].arn : try(regex_pattern_set_reference_statement.value.arnement.value.arn, null))
+                                    arn = try(aws_wafv2_regex_pattern_set.default[local.regex_rule_to_reusable_regex_pattern_set[regex_pattern_set_reference_statement.value.set_name]], null) != null ? aws_wafv2_regex_pattern_set.default[local.regex_rule_to_reusable_regex_pattern_set[regex_pattern_set_reference_statement.value.set_name]].arn : (try(aws_wafv2_regex_pattern_set.default[local.regex_rule_to_regex_pattern_set[rule.key]], null) != null ? aws_wafv2_regex_pattern_set.default[local.regex_rule_to_regex_pattern_set[rule.key]].arn : try(regex_pattern_set_reference_statement.value.arn, null))
 
                                     dynamic "field_to_match" {
                                       for_each = regex_pattern_set_reference_statement.value.field_to_match != null ? [regex_pattern_set_reference_statement.value.field_to_match] : []
@@ -6558,7 +8386,7 @@ resource "aws_wafv2_web_acl" "default" {
                 dynamic "regex_pattern_set_reference_statement" {
                   for_each = statement.value.regex_pattern_set_reference_statement != null ? [statement.value.regex_pattern_set_reference_statement] : []
                   content {
-                    arn = try(aws_wafv2_regex_pattern_set.default[local.regex_rule_to_reusable_regex_pattern_set[regex_pattern_set_reference_statement.value.set_name]], null) != null ? aws_wafv2_regex_pattern_set.default[local.regex_rule_to_reusable_regex_pattern_set[regex_pattern_set_reference_statement.value.set_name]].arn : (try(aws_wafv2_regex_pattern_set.default[local.regex_rule_to_regex_pattern_set[rule.key]], null) != null ? aws_wafv2_regex_pattern_set.default[local.regex_rule_to_regex_pattern_set[rule.key]].arn : try(regex_pattern_set_reference_statement.value.arnement.value.arn, null))
+                    arn = try(aws_wafv2_regex_pattern_set.default[local.regex_rule_to_reusable_regex_pattern_set[regex_pattern_set_reference_statement.value.set_name]], null) != null ? aws_wafv2_regex_pattern_set.default[local.regex_rule_to_reusable_regex_pattern_set[regex_pattern_set_reference_statement.value.set_name]].arn : (try(aws_wafv2_regex_pattern_set.default[local.regex_rule_to_regex_pattern_set[rule.key]], null) != null ? aws_wafv2_regex_pattern_set.default[local.regex_rule_to_regex_pattern_set[rule.key]].arn : try(regex_pattern_set_reference_statement.value.arn, null))
 
                     dynamic "field_to_match" {
                       for_each = regex_pattern_set_reference_statement.value.field_to_match != null ? [regex_pattern_set_reference_statement.value.field_to_match] : []
@@ -6642,6 +8470,80 @@ resource "aws_wafv2_web_acl" "default" {
                   content {
                     scope = label_match_statement.value.scope
                     key   = label_match_statement.value.key
+                  }
+                }
+                dynamic "size_constraint_statement" {
+                  for_each = statement.value.size_constraint_statement != null ? [statement.value.size_constraint_statement] : []
+                  content {
+                    comparison_operator = size_constraint_statement.value.comparison_operator
+                    size                = size_constraint_statement.value.size
+
+                    dynamic "field_to_match" {
+                      for_each = size_constraint_statement.value.field_to_match != null ? [size_constraint_statement.value.field_to_match] : []
+
+                      content {
+                        dynamic "all_query_arguments" {
+                          for_each = lookup(field_to_match.value, "all_query_arguments", null) != null ? [1] : []
+
+                          content {}
+                        }
+
+                        dynamic "body" {
+                          for_each = lookup(field_to_match.value, "body", null) != null ? [1] : []
+
+                          content {
+                            # Oversize handling tells AWS WAF what to do with a web request when the request component that the rule inspects is over the limits.
+                            # WAF does not support inspecting the entire contents of the body of a web request when the body exceeds 8 KB (8192 bytes).
+                            # Only the first 8 KB of the request body are forwarded to WAF by the underlying host service
+                            # Valid values include the following: CONTINUE, MATCH, NO_MATCH
+                            oversize_handling = try(field_to_match.value.body.oversize_handling, "CONTINUE")
+                          }
+                        }
+
+                        dynamic "method" {
+                          for_each = lookup(field_to_match.value, "method", null) != null ? [1] : []
+
+                          content {}
+                        }
+
+                        dynamic "query_string" {
+                          for_each = lookup(field_to_match.value, "query_string", null) != null ? [1] : []
+
+                          content {}
+                        }
+
+                        dynamic "single_header" {
+                          for_each = lookup(field_to_match.value, "single_header", null) != null ? [field_to_match.value.single_header] : []
+
+                          content {
+                            name = single_header.value.name
+                          }
+                        }
+
+                        dynamic "single_query_argument" {
+                          for_each = lookup(field_to_match.value, "single_query_argument", null) != null ? [field_to_match.value.single_query_argument] : []
+
+                          content {
+                            name = single_query_argument.value.name
+                          }
+                        }
+
+                        dynamic "uri_path" {
+                          for_each = lookup(field_to_match.value, "uri_path", null) != null ? [1] : []
+
+                          content {}
+                        }
+                      }
+                    }
+
+                    dynamic "text_transformation" {
+                      for_each = size_constraint_statement.value.text_transformation != null ? size_constraint_statement.value.text_transformation : []
+
+                      content {
+                        priority = text_transformation.value.priority
+                        type     = text_transformation.value.type
+                      }
+                    }
                   }
                 }
                 dynamic "byte_match_statement" {
@@ -6729,7 +8631,7 @@ resource "aws_wafv2_web_acl" "default" {
                   }
                 }
                 dynamic "not_statement" {
-                  for_each = statement.value.not_byte_match_statement != null || statement.value.not_label_match_statement != null || statement.value.not_regex_pattern_set_reference_statement != null ? [1] : []
+                  for_each = statement.value.not_byte_match_statement != null || statement.value.not_label_match_statement != null || statement.value.not_regex_pattern_set_reference_statement != null || statement.value.not_size_constraint_statement != null ? [1] : []
                   content {
                     dynamic "statement" {
                       for_each = statement.value.not_byte_match_statement != null ? [1] : []
@@ -6821,6 +8723,85 @@ resource "aws_wafv2_web_acl" "default" {
                       }
                     }
                     dynamic "statement" {
+                      for_each = statement.value.not_size_constraint_statement != null ? [1] : []
+                      content {
+                        dynamic "size_constraint_statement" {
+                          for_each = statement.value.not_size_constraint_statement != null ? [statement.value.not_size_constraint_statement] : []
+                          content {
+                            comparison_operator = size_constraint_statement.value.comparison_operator
+                            size                = size_constraint_statement.value.size
+
+                            dynamic "field_to_match" {
+                              for_each = size_constraint_statement.value.field_to_match != null ? [size_constraint_statement.value.field_to_match] : []
+
+                              content {
+                                dynamic "all_query_arguments" {
+                                  for_each = lookup(field_to_match.value, "all_query_arguments", null) != null ? [1] : []
+
+                                  content {}
+                                }
+
+                                dynamic "body" {
+                                  for_each = lookup(field_to_match.value, "body", null) != null ? [1] : []
+
+                                  content {
+                                    # Oversize handling tells AWS WAF what to do with a web request when the request component that the rule inspects is over the limits.
+                                    # WAF does not support inspecting the entire contents of the body of a web request when the body exceeds 8 KB (8192 bytes).
+                                    # Only the first 8 KB of the request body are forwarded to WAF by the underlying host service
+                                    # Valid values include the following: CONTINUE, MATCH, NO_MATCH
+                                    oversize_handling = try(field_to_match.value.body.oversize_handling, "CONTINUE")
+                                  }
+                                }
+
+                                dynamic "method" {
+                                  for_each = lookup(field_to_match.value, "method", null) != null ? [1] : []
+
+                                  content {}
+                                }
+
+                                dynamic "query_string" {
+                                  for_each = lookup(field_to_match.value, "query_string", null) != null ? [1] : []
+
+                                  content {}
+                                }
+
+                                dynamic "single_header" {
+                                  for_each = lookup(field_to_match.value, "single_header", null) != null ? [field_to_match.value.single_header] : []
+
+                                  content {
+                                    name = single_header.value.name
+                                  }
+                                }
+
+                                dynamic "single_query_argument" {
+                                  for_each = lookup(field_to_match.value, "single_query_argument", null) != null ? [field_to_match.value.single_query_argument] : []
+
+                                  content {
+                                    name = single_query_argument.value.name
+                                  }
+                                }
+
+                                dynamic "uri_path" {
+                                  for_each = lookup(field_to_match.value, "uri_path", null) != null ? [1] : []
+
+                                  content {}
+                                }
+                              }
+                            }
+
+                            dynamic "text_transformation" {
+                              for_each = size_constraint_statement.value.text_transformation != null ? size_constraint_statement.value.text_transformation : []
+
+                              content {
+                                priority = text_transformation.value.priority
+                                type     = text_transformation.value.type
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                    dynamic "statement" {
                       for_each = statement.value.not_label_match_statement != null ? [1] : []
                       content {
                         dynamic "label_match_statement" {
@@ -6838,7 +8819,7 @@ resource "aws_wafv2_web_acl" "default" {
                         dynamic "regex_pattern_set_reference_statement" {
                           for_each = statement.value.not_regex_pattern_set_reference_statement != null ? [statement.value.not_regex_pattern_set_reference_statement] : []
                           content {
-                            arn = try(aws_wafv2_regex_pattern_set.default[local.regex_rule_to_reusable_regex_pattern_set[regex_pattern_set_reference_statement.value.set_name]], null) != null ? aws_wafv2_regex_pattern_set.default[local.regex_rule_to_reusable_regex_pattern_set[regex_pattern_set_reference_statement.value.set_name]].arn : (try(aws_wafv2_regex_pattern_set.default[local.regex_rule_to_regex_pattern_set[rule.key]], null) != null ? aws_wafv2_regex_pattern_set.default[local.regex_rule_to_regex_pattern_set[rule.key]].arn : try(regex_pattern_set_reference_statement.value.arnement.value.arn, null))
+                            arn = try(aws_wafv2_regex_pattern_set.default[local.regex_rule_to_reusable_regex_pattern_set[regex_pattern_set_reference_statement.value.set_name]], null) != null ? aws_wafv2_regex_pattern_set.default[local.regex_rule_to_reusable_regex_pattern_set[regex_pattern_set_reference_statement.value.set_name]].arn : (try(aws_wafv2_regex_pattern_set.default[local.regex_rule_to_regex_pattern_set[rule.key]], null) != null ? aws_wafv2_regex_pattern_set.default[local.regex_rule_to_regex_pattern_set[rule.key]].arn : try(regex_pattern_set_reference_statement.value.arn, null))
 
                             dynamic "field_to_match" {
                               for_each = regex_pattern_set_reference_statement.value.field_to_match != null ? [regex_pattern_set_reference_statement.value.field_to_match] : []
@@ -6934,7 +8915,7 @@ resource "aws_wafv2_web_acl" "default" {
                 dynamic "regex_pattern_set_reference_statement" {
                   for_each = statement.value.regex_pattern_set_reference_statement != null ? [statement.value.regex_pattern_set_reference_statement] : []
                   content {
-                    arn = try(aws_wafv2_regex_pattern_set.default[local.regex_rule_to_reusable_regex_pattern_set[regex_pattern_set_reference_statement.value.set_name]], null) != null ? aws_wafv2_regex_pattern_set.default[local.regex_rule_to_reusable_regex_pattern_set[regex_pattern_set_reference_statement.value.set_name]].arn : (try(aws_wafv2_regex_pattern_set.default[local.regex_rule_to_regex_pattern_set[rule.key]], null) != null ? aws_wafv2_regex_pattern_set.default[local.regex_rule_to_regex_pattern_set[rule.key]].arn : try(regex_pattern_set_reference_statement.value.arnement.value.arn, null))
+                    arn = try(aws_wafv2_regex_pattern_set.default[local.regex_rule_to_reusable_regex_pattern_set[regex_pattern_set_reference_statement.value.set_name]], null) != null ? aws_wafv2_regex_pattern_set.default[local.regex_rule_to_reusable_regex_pattern_set[regex_pattern_set_reference_statement.value.set_name]].arn : (try(aws_wafv2_regex_pattern_set.default[local.regex_rule_to_regex_pattern_set[rule.key]], null) != null ? aws_wafv2_regex_pattern_set.default[local.regex_rule_to_regex_pattern_set[rule.key]].arn : try(regex_pattern_set_reference_statement.value.arn, null))
 
                     dynamic "field_to_match" {
                       for_each = regex_pattern_set_reference_statement.value.field_to_match != null ? [regex_pattern_set_reference_statement.value.field_to_match] : []
@@ -7018,6 +8999,80 @@ resource "aws_wafv2_web_acl" "default" {
                   content {
                     scope = label_match_statement.value.scope
                     key   = label_match_statement.value.key
+                  }
+                }
+                dynamic "size_constraint_statement" {
+                  for_each = statement.value.size_constraint_statement != null ? [statement.value.size_constraint_statement] : []
+                  content {
+                    comparison_operator = size_constraint_statement.value.comparison_operator
+                    size                = size_constraint_statement.value.size
+
+                    dynamic "field_to_match" {
+                      for_each = size_constraint_statement.value.field_to_match != null ? [size_constraint_statement.value.field_to_match] : []
+
+                      content {
+                        dynamic "all_query_arguments" {
+                          for_each = lookup(field_to_match.value, "all_query_arguments", null) != null ? [1] : []
+
+                          content {}
+                        }
+
+                        dynamic "body" {
+                          for_each = lookup(field_to_match.value, "body", null) != null ? [1] : []
+
+                          content {
+                            # Oversize handling tells AWS WAF what to do with a web request when the request component that the rule inspects is over the limits.
+                            # WAF does not support inspecting the entire contents of the body of a web request when the body exceeds 8 KB (8192 bytes).
+                            # Only the first 8 KB of the request body are forwarded to WAF by the underlying host service
+                            # Valid values include the following: CONTINUE, MATCH, NO_MATCH
+                            oversize_handling = try(field_to_match.value.body.oversize_handling, "CONTINUE")
+                          }
+                        }
+
+                        dynamic "method" {
+                          for_each = lookup(field_to_match.value, "method", null) != null ? [1] : []
+
+                          content {}
+                        }
+
+                        dynamic "query_string" {
+                          for_each = lookup(field_to_match.value, "query_string", null) != null ? [1] : []
+
+                          content {}
+                        }
+
+                        dynamic "single_header" {
+                          for_each = lookup(field_to_match.value, "single_header", null) != null ? [field_to_match.value.single_header] : []
+
+                          content {
+                            name = single_header.value.name
+                          }
+                        }
+
+                        dynamic "single_query_argument" {
+                          for_each = lookup(field_to_match.value, "single_query_argument", null) != null ? [field_to_match.value.single_query_argument] : []
+
+                          content {
+                            name = single_query_argument.value.name
+                          }
+                        }
+
+                        dynamic "uri_path" {
+                          for_each = lookup(field_to_match.value, "uri_path", null) != null ? [1] : []
+
+                          content {}
+                        }
+                      }
+                    }
+
+                    dynamic "text_transformation" {
+                      for_each = size_constraint_statement.value.text_transformation != null ? size_constraint_statement.value.text_transformation : []
+
+                      content {
+                        priority = text_transformation.value.priority
+                        type     = text_transformation.value.type
+                      }
+                    }
                   }
                 }
                 dynamic "byte_match_statement" {
@@ -7105,7 +9160,7 @@ resource "aws_wafv2_web_acl" "default" {
                   }
                 }
                 dynamic "not_statement" {
-                  for_each = statement.value.not_byte_match_statement != null || statement.value.not_label_match_statement != null || statement.value.not_regex_pattern_set_reference_statement != null ? [1] : []
+                  for_each = statement.value.not_byte_match_statement != null || statement.value.not_label_match_statement != null || statement.value.not_regex_pattern_set_reference_statement != null || statement.value.not_size_constraint_statement != null ? [1] : []
                   content {
                     dynamic "statement" {
                       for_each = statement.value.not_byte_match_statement != null ? [1] : []
@@ -7197,6 +9252,85 @@ resource "aws_wafv2_web_acl" "default" {
                       }
                     }
                     dynamic "statement" {
+                      for_each = statement.value.not_size_constraint_statement != null ? [1] : []
+                      content {
+                        dynamic "size_constraint_statement" {
+                          for_each = statement.value.not_size_constraint_statement != null ? [statement.value.not_size_constraint_statement] : []
+                          content {
+                            comparison_operator = size_constraint_statement.value.comparison_operator
+                            size                = size_constraint_statement.value.size
+
+                            dynamic "field_to_match" {
+                              for_each = size_constraint_statement.value.field_to_match != null ? [size_constraint_statement.value.field_to_match] : []
+
+                              content {
+                                dynamic "all_query_arguments" {
+                                  for_each = lookup(field_to_match.value, "all_query_arguments", null) != null ? [1] : []
+
+                                  content {}
+                                }
+
+                                dynamic "body" {
+                                  for_each = lookup(field_to_match.value, "body", null) != null ? [1] : []
+
+                                  content {
+                                    # Oversize handling tells AWS WAF what to do with a web request when the request component that the rule inspects is over the limits.
+                                    # WAF does not support inspecting the entire contents of the body of a web request when the body exceeds 8 KB (8192 bytes).
+                                    # Only the first 8 KB of the request body are forwarded to WAF by the underlying host service
+                                    # Valid values include the following: CONTINUE, MATCH, NO_MATCH
+                                    oversize_handling = try(field_to_match.value.body.oversize_handling, "CONTINUE")
+                                  }
+                                }
+
+                                dynamic "method" {
+                                  for_each = lookup(field_to_match.value, "method", null) != null ? [1] : []
+
+                                  content {}
+                                }
+
+                                dynamic "query_string" {
+                                  for_each = lookup(field_to_match.value, "query_string", null) != null ? [1] : []
+
+                                  content {}
+                                }
+
+                                dynamic "single_header" {
+                                  for_each = lookup(field_to_match.value, "single_header", null) != null ? [field_to_match.value.single_header] : []
+
+                                  content {
+                                    name = single_header.value.name
+                                  }
+                                }
+
+                                dynamic "single_query_argument" {
+                                  for_each = lookup(field_to_match.value, "single_query_argument", null) != null ? [field_to_match.value.single_query_argument] : []
+
+                                  content {
+                                    name = single_query_argument.value.name
+                                  }
+                                }
+
+                                dynamic "uri_path" {
+                                  for_each = lookup(field_to_match.value, "uri_path", null) != null ? [1] : []
+
+                                  content {}
+                                }
+                              }
+                            }
+
+                            dynamic "text_transformation" {
+                              for_each = size_constraint_statement.value.text_transformation != null ? size_constraint_statement.value.text_transformation : []
+
+                              content {
+                                priority = text_transformation.value.priority
+                                type     = text_transformation.value.type
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                    dynamic "statement" {
                       for_each = statement.value.not_label_match_statement != null ? [1] : []
                       content {
                         dynamic "label_match_statement" {
@@ -7214,7 +9348,7 @@ resource "aws_wafv2_web_acl" "default" {
                         dynamic "regex_pattern_set_reference_statement" {
                           for_each = statement.value.not_regex_pattern_set_reference_statement != null ? [statement.value.not_regex_pattern_set_reference_statement] : []
                           content {
-                            arn = try(aws_wafv2_regex_pattern_set.default[local.regex_rule_to_reusable_regex_pattern_set[regex_pattern_set_reference_statement.value.set_name]], null) != null ? aws_wafv2_regex_pattern_set.default[local.regex_rule_to_reusable_regex_pattern_set[regex_pattern_set_reference_statement.value.set_name]].arn : (try(aws_wafv2_regex_pattern_set.default[local.regex_rule_to_regex_pattern_set[rule.key]], null) != null ? aws_wafv2_regex_pattern_set.default[local.regex_rule_to_regex_pattern_set[rule.key]].arn : try(regex_pattern_set_reference_statement.value.arnement.value.arn, null))
+                            arn = try(aws_wafv2_regex_pattern_set.default[local.regex_rule_to_reusable_regex_pattern_set[regex_pattern_set_reference_statement.value.set_name]], null) != null ? aws_wafv2_regex_pattern_set.default[local.regex_rule_to_reusable_regex_pattern_set[regex_pattern_set_reference_statement.value.set_name]].arn : (try(aws_wafv2_regex_pattern_set.default[local.regex_rule_to_regex_pattern_set[rule.key]], null) != null ? aws_wafv2_regex_pattern_set.default[local.regex_rule_to_regex_pattern_set[rule.key]].arn : try(regex_pattern_set_reference_statement.value.arn, null))
 
                             dynamic "field_to_match" {
                               for_each = regex_pattern_set_reference_statement.value.field_to_match != null ? [regex_pattern_set_reference_statement.value.field_to_match] : []
@@ -7332,4 +9466,3 @@ resource "aws_wafv2_web_acl" "default" {
     }
   }
 }
-

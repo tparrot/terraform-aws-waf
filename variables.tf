@@ -420,6 +420,23 @@ variable "managed_rule_group_statement_rules" {
       name        = string
       vendor_name = string
       scope_down_statement = optional(object({
+        size_constraint_statement = optional(object({
+          comparison_operator = string
+          size                = number
+          field_to_match = object({
+            all_query_arguments   = optional(bool)
+            body                  = optional(object({ oversize_handling = string }))
+            method                = optional(bool)
+            query_string          = optional(bool)
+            single_header         = optional(object({ name = string }))
+            single_query_argument = optional(object({ name = string }))
+            uri_path              = optional(bool)
+          })
+          text_transformation = list(object({
+            priority = number
+            type     = string
+          }))
+        }), null)
         byte_match_statement = optional(object({
           positional_constraint = string
           search_string         = string
@@ -453,6 +470,23 @@ variable "managed_rule_group_statement_rules" {
             query_string          = optional(bool)
             ja3_fingerprint       = optional(object({ fallback_behavior = string }))
             ja4_fingerprint       = optional(object({ fallback_behavior = string }))
+            single_header         = optional(object({ name = string }))
+            single_query_argument = optional(object({ name = string }))
+            uri_path              = optional(bool)
+          })
+          text_transformation = list(object({
+            priority = number
+            type     = string
+          }))
+        }), null)
+        not_size_constraint_statement = optional(object({
+          comparison_operator = string
+          size                = number
+          field_to_match = object({
+            all_query_arguments   = optional(bool)
+            body                  = optional(object({ oversize_handling = string }))
+            method                = optional(bool)
+            query_string          = optional(bool)
             single_header         = optional(object({ name = string }))
             single_query_argument = optional(object({ name = string }))
             uri_path              = optional(bool)
@@ -729,6 +763,23 @@ variable "rate_based_statement_rules" {
         }), null)
       })), null)
       scope_down_statement = optional(object({
+        size_constraint_statement = optional(object({
+          comparison_operator = string
+          size                = number
+          field_to_match = object({
+            all_query_arguments   = optional(bool)
+            body                  = optional(object({ oversize_handling = string }))
+            method                = optional(bool)
+            query_string          = optional(bool)
+            single_header         = optional(object({ name = string }))
+            single_query_argument = optional(object({ name = string }))
+            uri_path              = optional(bool)
+          })
+          text_transformation = list(object({
+            priority = number
+            type     = string
+          }))
+        }), null)
         byte_match_statement = optional(object({
           positional_constraint = string
           search_string         = string
@@ -763,6 +814,23 @@ variable "rate_based_statement_rules" {
             query_string          = optional(bool)
             ja3_fingerprint       = optional(object({ fallback_behavior = string }))
             ja4_fingerprint       = optional(object({ fallback_behavior = string }))
+            single_header         = optional(object({ name = string }))
+            single_query_argument = optional(object({ name = string }))
+            uri_path              = optional(bool)
+          })
+          text_transformation = list(object({
+            priority = number
+            type     = string
+          }))
+        }), null)
+        not_size_constraint_statement = optional(object({
+          comparison_operator = string
+          size                = number
+          field_to_match = object({
+            all_query_arguments   = optional(bool)
+            body                  = optional(object({ oversize_handling = string }))
+            method                = optional(bool)
+            query_string          = optional(bool)
             single_header         = optional(object({ name = string }))
             single_query_argument = optional(object({ name = string }))
             uri_path              = optional(bool)
@@ -1032,6 +1100,23 @@ variable "regex_match_statement_rules" {
         type     = string
       }))
       scope_down_statement = optional(object({
+        size_constraint_statement = optional(object({
+          comparison_operator = string
+          size                = number
+          field_to_match = object({
+            all_query_arguments   = optional(bool)
+            body                  = optional(object({ oversize_handling = string }))
+            method                = optional(bool)
+            query_string          = optional(bool)
+            single_header         = optional(object({ name = string }))
+            single_query_argument = optional(object({ name = string }))
+            uri_path              = optional(bool)
+          })
+          text_transformation = list(object({
+            priority = number
+            type     = string
+          }))
+        }), null)
         byte_match_statement = optional(object({
           positional_constraint = string
           search_string         = string
@@ -1065,6 +1150,23 @@ variable "regex_match_statement_rules" {
             query_string          = optional(bool)
             ja3_fingerprint       = optional(object({ fallback_behavior = string }))
             ja4_fingerprint       = optional(object({ fallback_behavior = string }))
+            single_header         = optional(object({ name = string }))
+            single_query_argument = optional(object({ name = string }))
+            uri_path              = optional(bool)
+          })
+          text_transformation = list(object({
+            priority = number
+            type     = string
+          }))
+        }), null)
+        not_size_constraint_statement = optional(object({
+          comparison_operator = string
+          size                = number
+          field_to_match = object({
+            all_query_arguments   = optional(bool)
+            body                  = optional(object({ oversize_handling = string }))
+            method                = optional(bool)
+            query_string          = optional(bool)
             single_header         = optional(object({ name = string }))
             single_query_argument = optional(object({ name = string }))
             uri_path              = optional(bool)
@@ -1388,6 +1490,23 @@ variable "sqli_match_statement_rules" {
         type     = string
       }))
       scope_down_statement = optional(object({
+        size_constraint_statement = optional(object({
+          comparison_operator = string
+          size                = number
+          field_to_match = object({
+            all_query_arguments   = optional(bool)
+            body                  = optional(object({ oversize_handling = string }))
+            method                = optional(bool)
+            query_string          = optional(bool)
+            single_header         = optional(object({ name = string }))
+            single_query_argument = optional(object({ name = string }))
+            uri_path              = optional(bool)
+          })
+          text_transformation = list(object({
+            priority = number
+            type     = string
+          }))
+        }), null)
         byte_match_statement = optional(object({
           positional_constraint = string
           search_string         = string
@@ -1421,6 +1540,23 @@ variable "sqli_match_statement_rules" {
             query_string          = optional(bool)
             ja3_fingerprint       = optional(object({ fallback_behavior = string }))
             ja4_fingerprint       = optional(object({ fallback_behavior = string }))
+            single_header         = optional(object({ name = string }))
+            single_query_argument = optional(object({ name = string }))
+            uri_path              = optional(bool)
+          })
+          text_transformation = list(object({
+            priority = number
+            type     = string
+          }))
+        }), null)
+        not_size_constraint_statement = optional(object({
+          comparison_operator = string
+          size                = number
+          field_to_match = object({
+            all_query_arguments   = optional(bool)
+            body                  = optional(object({ oversize_handling = string }))
+            method                = optional(bool)
+            query_string          = optional(bool)
             single_header         = optional(object({ name = string }))
             single_query_argument = optional(object({ name = string }))
             uri_path              = optional(bool)

@@ -107,6 +107,8 @@ locals {
             not_size_constraint_statement             = stmt.type == "not_size_constraint_statement" ? try(jsondecode(stmt.statement), null) : null
             byte_match_statement                      = stmt.type == "byte_match_statement" ? try(jsondecode(stmt.statement), null) : null
             not_byte_match_statement                  = stmt.type == "not_byte_match_statement" ? try(jsondecode(stmt.statement), null) : null
+            ip_set_reference_statement                = stmt.type == "ip_set_reference_statement" ? try(jsondecode(stmt.statement), null) : null
+            not_ip_set_reference_statement            = stmt.type == "not_ip_set_reference_statement" ? try(jsondecode(stmt.statement), null) : null
             regex_pattern_set_reference_statement     = stmt.type == "regex_pattern_set_reference_statement" ? try(jsondecode(stmt.statement), null) : null
             not_regex_pattern_set_reference_statement = stmt.type == "not_regex_pattern_set_reference_statement" ? try(jsondecode(stmt.statement), null) : null
           }
@@ -122,6 +124,8 @@ locals {
             not_size_constraint_statement             = stmt.type == "not_size_constraint_statement" ? try(jsondecode(stmt.statement), null) : null
             byte_match_statement                      = stmt.type == "byte_match_statement" ? try(jsondecode(stmt.statement), null) : null
             not_byte_match_statement                  = stmt.type == "not_byte_match_statement" ? try(jsondecode(stmt.statement), null) : null
+            ip_set_reference_statement                = stmt.type == "ip_set_reference_statement" ? try(jsondecode(stmt.statement), null) : null
+            not_ip_set_reference_statement            = stmt.type == "not_ip_set_reference_statement" ? try(jsondecode(stmt.statement), null) : null
             regex_pattern_set_reference_statement     = stmt.type == "regex_pattern_set_reference_statement" ? try(jsondecode(stmt.statement), null) : null
             not_regex_pattern_set_reference_statement = stmt.type == "not_regex_pattern_set_reference_statement" ? try(jsondecode(stmt.statement), null) : null
           }
@@ -574,7 +578,7 @@ resource "aws_wafv2_web_acl" "default" {
           for_each = lookup(rule.value, "statement", null) != null ? [rule.value.statement] : []
 
           content {
-            arn = try(aws_wafv2_ip_set.default[local.ip_rule_to_ip_set[rule.key]], null) != null ? aws_wafv2_ip_set.default[local.ip_rule_to_ip_set[rule.key]].arn : ip_set_reference_statement.value.arn
+            arn = try(aws_wafv2_ip_set.default[local.ip_rule_to_reusable_ip_set[ip_set_reference_statement.value.set_name]], null) != null ? aws_wafv2_ip_set.default[local.ip_rule_to_reusable_ip_set[ip_set_reference_statement.value.set_name]].arn : (try(aws_wafv2_ip_set.default[local.ip_rule_to_ip_set[rule.key]], null) != null ? aws_wafv2_ip_set.default[local.ip_rule_to_ip_set[rule.key]].arn : try(ip_set_reference_statement.value.arn, null))
 
             dynamic "ip_set_forwarded_ip_config" {
               for_each = lookup(ip_set_reference_statement.value, "ip_set_forwarded_ip_config", null) != null ? [ip_set_reference_statement.value.ip_set_forwarded_ip_config] : []
@@ -917,6 +921,22 @@ resource "aws_wafv2_web_acl" "default" {
             dynamic "scope_down_statement" {
               for_each = lookup(stmt.value, "scope_down_statement", null) != null ? [stmt.value.scope_down_statement] : []
               content {
+                dynamic "ip_set_reference_statement" {
+                  for_each = scope_down_statement.value.ip_set_reference_statement != null ? [scope_down_statement.value.ip_set_reference_statement] : []
+                  content {
+                    arn = try(aws_wafv2_ip_set.default[local.ip_rule_to_reusable_ip_set[ip_set_reference_statement.value.set_name]], null) != null ? aws_wafv2_ip_set.default[local.ip_rule_to_reusable_ip_set[ip_set_reference_statement.value.set_name]].arn : (try(aws_wafv2_ip_set.default[local.ip_rule_to_ip_set[rule.key]], null) != null ? aws_wafv2_ip_set.default[local.ip_rule_to_ip_set[rule.key]].arn : try(ip_set_reference_statement.value.arn, null))
+
+                    dynamic "ip_set_forwarded_ip_config" {
+                      for_each = lookup(ip_set_reference_statement.value, "ip_set_forwarded_ip_config", null) != null ? [ip_set_reference_statement.value.ip_set_forwarded_ip_config] : []
+
+                      content {
+                        fallback_behavior = ip_set_forwarded_ip_config.value.fallback_behavior
+                        header_name       = ip_set_forwarded_ip_config.value.header_name
+                        position          = ip_set_forwarded_ip_config.value.position
+                      }
+                    }
+                  }
+                }
                 dynamic "regex_pattern_set_reference_statement" {
                   for_each = scope_down_statement.value.regex_pattern_set_reference_statement != null ? [scope_down_statement.value.regex_pattern_set_reference_statement] : []
                   content {
@@ -1165,7 +1185,7 @@ resource "aws_wafv2_web_acl" "default" {
                   }
                 }
                 dynamic "not_statement" {
-                  for_each = scope_down_statement.value.not_byte_match_statement != null || scope_down_statement.value.not_label_match_statement != null || scope_down_statement.value.not_regex_pattern_set_reference_statement != null || scope_down_statement.value.not_size_constraint_statement != null ? [1] : []
+                  for_each = scope_down_statement.value.not_byte_match_statement != null || scope_down_statement.value.not_label_match_statement != null || scope_down_statement.value.not_regex_pattern_set_reference_statement != null || scope_down_statement.value.not_size_constraint_statement != null || scope_down_statement.value.not_ip_set_reference_statement != null ? [1] : []
                   content {
                     dynamic "statement" {
                       for_each = scope_down_statement.value.not_size_constraint_statement != null ? [1] : []
@@ -1342,6 +1362,27 @@ resource "aws_wafv2_web_acl" "default" {
                           content {
                             scope = label_match_statement.value.scope
                             key   = label_match_statement.value.key
+                          }
+                        }
+                      }
+                    }
+                    dynamic "statement" {
+                      for_each = scope_down_statement.value.not_ip_set_reference_statement != null ? [1] : []
+                      content {
+                        dynamic "ip_set_reference_statement" {
+                          for_each = statement.value.not_ip_set_reference_statement != null ? [statement.value.not_ip_set_reference_statement] : []
+                          content {
+                            arn = try(aws_wafv2_ip_set.default[local.ip_rule_to_reusable_ip_set[ip_set_reference_statement.value.set_name]], null) != null ? aws_wafv2_ip_set.default[local.ip_rule_to_reusable_ip_set[ip_set_reference_statement.value.set_name]].arn : (try(aws_wafv2_ip_set.default[local.ip_rule_to_ip_set[rule.key]], null) != null ? aws_wafv2_ip_set.default[local.ip_rule_to_ip_set[rule.key]].arn : try(ip_set_reference_statement.value.arn, null))
+
+                            dynamic "ip_set_forwarded_ip_config" {
+                              for_each = lookup(ip_set_reference_statement.value, "ip_set_forwarded_ip_config", null) != null ? [ip_set_reference_statement.value.ip_set_forwarded_ip_config] : []
+
+                              content {
+                                fallback_behavior = ip_set_forwarded_ip_config.value.fallback_behavior
+                                header_name       = ip_set_forwarded_ip_config.value.header_name
+                                position          = ip_set_forwarded_ip_config.value.position
+                              }
+                            }
                           }
                         }
                       }
@@ -1683,6 +1724,22 @@ resource "aws_wafv2_web_acl" "default" {
                             }
                           }
                         }
+                        dynamic "ip_set_reference_statement" {
+                          for_each = nested_statement.value.type == "ip_set_reference_statement" ? [jsondecode(nested_statement.value.statement)] : []
+                          content {
+                            arn = try(aws_wafv2_ip_set.default[local.ip_rule_to_reusable_ip_set[ip_set_reference_statement.value.set_name]], null) != null ? aws_wafv2_ip_set.default[local.ip_rule_to_reusable_ip_set[ip_set_reference_statement.value.set_name]].arn : (try(aws_wafv2_ip_set.default[local.ip_rule_to_ip_set[rule.key]], null) != null ? aws_wafv2_ip_set.default[local.ip_rule_to_ip_set[rule.key]].arn : try(ip_set_reference_statement.value.arn, null))
+
+                            dynamic "ip_set_forwarded_ip_config" {
+                              for_each = lookup(ip_set_reference_statement.value, "ip_set_forwarded_ip_config", null) != null ? [ip_set_reference_statement.value.ip_set_forwarded_ip_config] : []
+
+                              content {
+                                fallback_behavior = ip_set_forwarded_ip_config.value.fallback_behavior
+                                header_name       = ip_set_forwarded_ip_config.value.header_name
+                                position          = ip_set_forwarded_ip_config.value.position
+                              }
+                            }
+                          }
+                        }
                         dynamic "label_match_statement" {
                           for_each = nested_statement.value.type == "label_match_statement" ? [jsondecode(nested_statement.value.statement)] : []
                           content {
@@ -1691,7 +1748,7 @@ resource "aws_wafv2_web_acl" "default" {
                           }
                         }
                         dynamic "not_statement" {
-                          for_each = nested_statement.value.type == "not_byte_match_statement" || nested_statement.value.type == "not_label_match_statement" || nested_statement.value.type == "not_regex_pattern_set_reference_statement" || nested_statement.value.type == "not_size_constraint_statement" ? [1] : []
+                          for_each = nested_statement.value.type == "not_byte_match_statement" || nested_statement.value.type == "not_label_match_statement" || nested_statement.value.type == "not_regex_pattern_set_reference_statement" || nested_statement.value.type == "not_size_constraint_statement" || nested_statement.value.type == "not_ip_set_reference_statement" ? [1] : []
                           content {
                             dynamic "statement" {
                               iterator = nested_not_statement
@@ -1863,6 +1920,7 @@ resource "aws_wafv2_web_acl" "default" {
                                 }
                               }
                             }
+
                             dynamic "statement" {
                               iterator = nested_not_statement
                               for_each = nested_statement.value.type != null && nested_statement.value.type == "not_label_match_statement" ? [1] : []
@@ -1872,6 +1930,29 @@ resource "aws_wafv2_web_acl" "default" {
                                   content {
                                     scope = label_match_statement.value.scope
                                     key   = label_match_statement.value.key
+                                  }
+                                }
+                              }
+                            }
+
+                            dynamic "statement" {
+                              iterator = nested_not_statement
+                              for_each = nested_statement.value.type != null && nested_statement.value.type == "not_ip_set_reference_statement" ? [1] : []
+                              content {
+                                dynamic "ip_set_reference_statement" {
+                                  for_each = nested_statement.value.type == "not_ip_set_reference_statement" ? [jsondecode(nested_statement.value.statement)] : []
+                                  content {
+                                    arn = try(aws_wafv2_ip_set.default[local.ip_rule_to_reusable_ip_set[ip_set_reference_statement.value.set_name]], null) != null ? aws_wafv2_ip_set.default[local.ip_rule_to_reusable_ip_set[ip_set_reference_statement.value.set_name]].arn : (try(aws_wafv2_ip_set.default[local.ip_rule_to_ip_set[rule.key]], null) != null ? aws_wafv2_ip_set.default[local.ip_rule_to_ip_set[rule.key]].arn : try(ip_set_reference_statement.value.arn, null))
+
+                                    dynamic "ip_set_forwarded_ip_config" {
+                                      for_each = lookup(ip_set_reference_statement.value, "ip_set_forwarded_ip_config", null) != null ? [ip_set_reference_statement.value.ip_set_forwarded_ip_config] : []
+
+                                      content {
+                                        fallback_behavior = ip_set_forwarded_ip_config.value.fallback_behavior
+                                        header_name       = ip_set_forwarded_ip_config.value.header_name
+                                        position          = ip_set_forwarded_ip_config.value.position
+                                      }
+                                    }
                                   }
                                 }
                               }
@@ -1968,6 +2049,7 @@ resource "aws_wafv2_web_acl" "default" {
                         }
                       }
                     }
+
                   }
                 }
                 dynamic "or_statement" {
@@ -2217,6 +2299,22 @@ resource "aws_wafv2_web_acl" "default" {
                             }
                           }
                         }
+                        dynamic "ip_set_reference_statement" {
+                          for_each = nested_statement.value.type == "ip_set_reference_statement" ? [jsondecode(nested_statement.value.statement)] : []
+                          content {
+                            arn = try(aws_wafv2_ip_set.default[local.ip_rule_to_reusable_ip_set[ip_set_reference_statement.value.set_name]], null) != null ? aws_wafv2_ip_set.default[local.ip_rule_to_reusable_ip_set[ip_set_reference_statement.value.set_name]].arn : (try(aws_wafv2_ip_set.default[local.ip_rule_to_ip_set[rule.key]], null) != null ? aws_wafv2_ip_set.default[local.ip_rule_to_ip_set[rule.key]].arn : try(ip_set_reference_statement.value.arn, null))
+
+                            dynamic "ip_set_forwarded_ip_config" {
+                              for_each = lookup(ip_set_reference_statement.value, "ip_set_forwarded_ip_config", null) != null ? [ip_set_reference_statement.value.ip_set_forwarded_ip_config] : []
+
+                              content {
+                                fallback_behavior = ip_set_forwarded_ip_config.value.fallback_behavior
+                                header_name       = ip_set_forwarded_ip_config.value.header_name
+                                position          = ip_set_forwarded_ip_config.value.position
+                              }
+                            }
+                          }
+                        }
                         dynamic "label_match_statement" {
                           for_each = nested_statement.value.type == "label_match_statement" ? [jsondecode(nested_statement.value.statement)] : []
                           content {
@@ -2225,7 +2323,7 @@ resource "aws_wafv2_web_acl" "default" {
                           }
                         }
                         dynamic "not_statement" {
-                          for_each = nested_statement.value.type == "not_byte_match_statement" || nested_statement.value.type == "not_label_match_statement" || nested_statement.value.type == "not_regex_pattern_set_reference_statement" || nested_statement.value.type == "not_size_constraint_statement" ? [1] : []
+                          for_each = nested_statement.value.type == "not_byte_match_statement" || nested_statement.value.type == "not_label_match_statement" || nested_statement.value.type == "not_regex_pattern_set_reference_statement" || nested_statement.value.type == "not_size_constraint_statement" || nested_statement.value.type == "not_ip_set_reference_statement" ? [1] : []
                           content {
                             dynamic "statement" {
                               iterator = nested_not_statement
@@ -2396,6 +2494,7 @@ resource "aws_wafv2_web_acl" "default" {
                                 }
                               }
                             }
+
                             dynamic "statement" {
                               iterator = nested_not_statement
                               for_each = nested_statement.value.type != null && nested_statement.value.type == "not_label_match_statement" ? [1] : []
@@ -2405,6 +2504,29 @@ resource "aws_wafv2_web_acl" "default" {
                                   content {
                                     scope = label_match_statement.value.scope
                                     key   = label_match_statement.value.key
+                                  }
+                                }
+                              }
+                            }
+
+                            dynamic "statement" {
+                              iterator = nested_not_statement
+                              for_each = nested_statement.value.type != null && nested_statement.value.type == "not_ip_set_reference_statement" ? [1] : []
+                              content {
+                                dynamic "ip_set_reference_statement" {
+                                  for_each = nested_statement.value.type == "not_ip_set_reference_statement" ? [jsondecode(nested_statement.value.statement)] : []
+                                  content {
+                                    arn = try(aws_wafv2_ip_set.default[local.ip_rule_to_reusable_ip_set[ip_set_reference_statement.value.set_name]], null) != null ? aws_wafv2_ip_set.default[local.ip_rule_to_reusable_ip_set[ip_set_reference_statement.value.set_name]].arn : (try(aws_wafv2_ip_set.default[local.ip_rule_to_ip_set[rule.key]], null) != null ? aws_wafv2_ip_set.default[local.ip_rule_to_ip_set[rule.key]].arn : try(ip_set_reference_statement.value.arn, null))
+
+                                    dynamic "ip_set_forwarded_ip_config" {
+                                      for_each = lookup(ip_set_reference_statement.value, "ip_set_forwarded_ip_config", null) != null ? [ip_set_reference_statement.value.ip_set_forwarded_ip_config] : []
+
+                                      content {
+                                        fallback_behavior = ip_set_forwarded_ip_config.value.fallback_behavior
+                                        header_name       = ip_set_forwarded_ip_config.value.header_name
+                                        position          = ip_set_forwarded_ip_config.value.position
+                                      }
+                                    }
                                   }
                                 }
                               }
@@ -2637,6 +2759,22 @@ resource "aws_wafv2_web_acl" "default" {
             dynamic "scope_down_statement" {
               for_each = lookup(stmt.value, "scope_down_statement", null) != null ? [stmt.value.scope_down_statement] : []
               content {
+                dynamic "ip_set_reference_statement" {
+                  for_each = scope_down_statement.value.ip_set_reference_statement != null ? [scope_down_statement.value.ip_set_reference_statement] : []
+                  content {
+                    arn = try(aws_wafv2_ip_set.default[local.ip_rule_to_reusable_ip_set[ip_set_reference_statement.value.set_name]], null) != null ? aws_wafv2_ip_set.default[local.ip_rule_to_reusable_ip_set[ip_set_reference_statement.value.set_name]].arn : (try(aws_wafv2_ip_set.default[local.ip_rule_to_ip_set[rule.key]], null) != null ? aws_wafv2_ip_set.default[local.ip_rule_to_ip_set[rule.key]].arn : try(ip_set_reference_statement.value.arn, null))
+
+                    dynamic "ip_set_forwarded_ip_config" {
+                      for_each = lookup(ip_set_reference_statement.value, "ip_set_forwarded_ip_config", null) != null ? [ip_set_reference_statement.value.ip_set_forwarded_ip_config] : []
+
+                      content {
+                        fallback_behavior = ip_set_forwarded_ip_config.value.fallback_behavior
+                        header_name       = ip_set_forwarded_ip_config.value.header_name
+                        position          = ip_set_forwarded_ip_config.value.position
+                      }
+                    }
+                  }
+                }
                 dynamic "regex_pattern_set_reference_statement" {
                   for_each = scope_down_statement.value.regex_pattern_set_reference_statement != null ? [scope_down_statement.value.regex_pattern_set_reference_statement] : []
                   content {
@@ -2885,7 +3023,7 @@ resource "aws_wafv2_web_acl" "default" {
                   }
                 }
                 dynamic "not_statement" {
-                  for_each = scope_down_statement.value.not_byte_match_statement != null || scope_down_statement.value.not_label_match_statement != null || scope_down_statement.value.not_regex_pattern_set_reference_statement != null || scope_down_statement.value.not_size_constraint_statement != null ? [1] : []
+                  for_each = scope_down_statement.value.not_byte_match_statement != null || scope_down_statement.value.not_label_match_statement != null || scope_down_statement.value.not_regex_pattern_set_reference_statement != null || scope_down_statement.value.not_size_constraint_statement != null || scope_down_statement.value.not_ip_set_reference_statement != null ? [1] : []
                   content {
                     dynamic "statement" {
                       for_each = scope_down_statement.value.not_size_constraint_statement != null ? [1] : []
@@ -3062,6 +3200,27 @@ resource "aws_wafv2_web_acl" "default" {
                           content {
                             scope = label_match_statement.value.scope
                             key   = label_match_statement.value.key
+                          }
+                        }
+                      }
+                    }
+                    dynamic "statement" {
+                      for_each = scope_down_statement.value.not_ip_set_reference_statement != null ? [1] : []
+                      content {
+                        dynamic "ip_set_reference_statement" {
+                          for_each = statement.value.not_ip_set_reference_statement != null ? [statement.value.not_ip_set_reference_statement] : []
+                          content {
+                            arn = try(aws_wafv2_ip_set.default[local.ip_rule_to_reusable_ip_set[ip_set_reference_statement.value.set_name]], null) != null ? aws_wafv2_ip_set.default[local.ip_rule_to_reusable_ip_set[ip_set_reference_statement.value.set_name]].arn : (try(aws_wafv2_ip_set.default[local.ip_rule_to_ip_set[rule.key]], null) != null ? aws_wafv2_ip_set.default[local.ip_rule_to_ip_set[rule.key]].arn : try(ip_set_reference_statement.value.arn, null))
+
+                            dynamic "ip_set_forwarded_ip_config" {
+                              for_each = lookup(ip_set_reference_statement.value, "ip_set_forwarded_ip_config", null) != null ? [ip_set_reference_statement.value.ip_set_forwarded_ip_config] : []
+
+                              content {
+                                fallback_behavior = ip_set_forwarded_ip_config.value.fallback_behavior
+                                header_name       = ip_set_forwarded_ip_config.value.header_name
+                                position          = ip_set_forwarded_ip_config.value.position
+                              }
+                            }
                           }
                         }
                       }
@@ -3403,6 +3562,22 @@ resource "aws_wafv2_web_acl" "default" {
                             }
                           }
                         }
+                        dynamic "ip_set_reference_statement" {
+                          for_each = nested_statement.value.type == "ip_set_reference_statement" ? [jsondecode(nested_statement.value.statement)] : []
+                          content {
+                            arn = try(aws_wafv2_ip_set.default[local.ip_rule_to_reusable_ip_set[ip_set_reference_statement.value.set_name]], null) != null ? aws_wafv2_ip_set.default[local.ip_rule_to_reusable_ip_set[ip_set_reference_statement.value.set_name]].arn : (try(aws_wafv2_ip_set.default[local.ip_rule_to_ip_set[rule.key]], null) != null ? aws_wafv2_ip_set.default[local.ip_rule_to_ip_set[rule.key]].arn : try(ip_set_reference_statement.value.arn, null))
+
+                            dynamic "ip_set_forwarded_ip_config" {
+                              for_each = lookup(ip_set_reference_statement.value, "ip_set_forwarded_ip_config", null) != null ? [ip_set_reference_statement.value.ip_set_forwarded_ip_config] : []
+
+                              content {
+                                fallback_behavior = ip_set_forwarded_ip_config.value.fallback_behavior
+                                header_name       = ip_set_forwarded_ip_config.value.header_name
+                                position          = ip_set_forwarded_ip_config.value.position
+                              }
+                            }
+                          }
+                        }
                         dynamic "label_match_statement" {
                           for_each = nested_statement.value.type == "label_match_statement" ? [jsondecode(nested_statement.value.statement)] : []
                           content {
@@ -3411,7 +3586,7 @@ resource "aws_wafv2_web_acl" "default" {
                           }
                         }
                         dynamic "not_statement" {
-                          for_each = nested_statement.value.type == "not_byte_match_statement" || nested_statement.value.type == "not_label_match_statement" || nested_statement.value.type == "not_regex_pattern_set_reference_statement" || nested_statement.value.type == "not_size_constraint_statement" ? [1] : []
+                          for_each = nested_statement.value.type == "not_byte_match_statement" || nested_statement.value.type == "not_label_match_statement" || nested_statement.value.type == "not_regex_pattern_set_reference_statement" || nested_statement.value.type == "not_size_constraint_statement" || nested_statement.value.type == "not_ip_set_reference_statement" ? [1] : []
                           content {
                             dynamic "statement" {
                               iterator = nested_not_statement
@@ -3583,6 +3758,7 @@ resource "aws_wafv2_web_acl" "default" {
                                 }
                               }
                             }
+
                             dynamic "statement" {
                               iterator = nested_not_statement
                               for_each = nested_statement.value.type != null && nested_statement.value.type == "not_label_match_statement" ? [1] : []
@@ -3592,6 +3768,29 @@ resource "aws_wafv2_web_acl" "default" {
                                   content {
                                     scope = label_match_statement.value.scope
                                     key   = label_match_statement.value.key
+                                  }
+                                }
+                              }
+                            }
+
+                            dynamic "statement" {
+                              iterator = nested_not_statement
+                              for_each = nested_statement.value.type != null && nested_statement.value.type == "not_ip_set_reference_statement" ? [1] : []
+                              content {
+                                dynamic "ip_set_reference_statement" {
+                                  for_each = nested_statement.value.type == "not_ip_set_reference_statement" ? [jsondecode(nested_statement.value.statement)] : []
+                                  content {
+                                    arn = try(aws_wafv2_ip_set.default[local.ip_rule_to_reusable_ip_set[ip_set_reference_statement.value.set_name]], null) != null ? aws_wafv2_ip_set.default[local.ip_rule_to_reusable_ip_set[ip_set_reference_statement.value.set_name]].arn : (try(aws_wafv2_ip_set.default[local.ip_rule_to_ip_set[rule.key]], null) != null ? aws_wafv2_ip_set.default[local.ip_rule_to_ip_set[rule.key]].arn : try(ip_set_reference_statement.value.arn, null))
+
+                                    dynamic "ip_set_forwarded_ip_config" {
+                                      for_each = lookup(ip_set_reference_statement.value, "ip_set_forwarded_ip_config", null) != null ? [ip_set_reference_statement.value.ip_set_forwarded_ip_config] : []
+
+                                      content {
+                                        fallback_behavior = ip_set_forwarded_ip_config.value.fallback_behavior
+                                        header_name       = ip_set_forwarded_ip_config.value.header_name
+                                        position          = ip_set_forwarded_ip_config.value.position
+                                      }
+                                    }
                                   }
                                 }
                               }
@@ -3688,6 +3887,7 @@ resource "aws_wafv2_web_acl" "default" {
                         }
                       }
                     }
+
                   }
                 }
                 dynamic "or_statement" {
@@ -3937,6 +4137,22 @@ resource "aws_wafv2_web_acl" "default" {
                             }
                           }
                         }
+                        dynamic "ip_set_reference_statement" {
+                          for_each = nested_statement.value.type == "ip_set_reference_statement" ? [jsondecode(nested_statement.value.statement)] : []
+                          content {
+                            arn = try(aws_wafv2_ip_set.default[local.ip_rule_to_reusable_ip_set[ip_set_reference_statement.value.set_name]], null) != null ? aws_wafv2_ip_set.default[local.ip_rule_to_reusable_ip_set[ip_set_reference_statement.value.set_name]].arn : (try(aws_wafv2_ip_set.default[local.ip_rule_to_ip_set[rule.key]], null) != null ? aws_wafv2_ip_set.default[local.ip_rule_to_ip_set[rule.key]].arn : try(ip_set_reference_statement.value.arn, null))
+
+                            dynamic "ip_set_forwarded_ip_config" {
+                              for_each = lookup(ip_set_reference_statement.value, "ip_set_forwarded_ip_config", null) != null ? [ip_set_reference_statement.value.ip_set_forwarded_ip_config] : []
+
+                              content {
+                                fallback_behavior = ip_set_forwarded_ip_config.value.fallback_behavior
+                                header_name       = ip_set_forwarded_ip_config.value.header_name
+                                position          = ip_set_forwarded_ip_config.value.position
+                              }
+                            }
+                          }
+                        }
                         dynamic "label_match_statement" {
                           for_each = nested_statement.value.type == "label_match_statement" ? [jsondecode(nested_statement.value.statement)] : []
                           content {
@@ -3945,7 +4161,7 @@ resource "aws_wafv2_web_acl" "default" {
                           }
                         }
                         dynamic "not_statement" {
-                          for_each = nested_statement.value.type == "not_byte_match_statement" || nested_statement.value.type == "not_label_match_statement" || nested_statement.value.type == "not_regex_pattern_set_reference_statement" || nested_statement.value.type == "not_size_constraint_statement" ? [1] : []
+                          for_each = nested_statement.value.type == "not_byte_match_statement" || nested_statement.value.type == "not_label_match_statement" || nested_statement.value.type == "not_regex_pattern_set_reference_statement" || nested_statement.value.type == "not_size_constraint_statement" || nested_statement.value.type == "not_ip_set_reference_statement" ? [1] : []
                           content {
                             dynamic "statement" {
                               iterator = nested_not_statement
@@ -4116,6 +4332,7 @@ resource "aws_wafv2_web_acl" "default" {
                                 }
                               }
                             }
+
                             dynamic "statement" {
                               iterator = nested_not_statement
                               for_each = nested_statement.value.type != null && nested_statement.value.type == "not_label_match_statement" ? [1] : []
@@ -4125,6 +4342,29 @@ resource "aws_wafv2_web_acl" "default" {
                                   content {
                                     scope = label_match_statement.value.scope
                                     key   = label_match_statement.value.key
+                                  }
+                                }
+                              }
+                            }
+
+                            dynamic "statement" {
+                              iterator = nested_not_statement
+                              for_each = nested_statement.value.type != null && nested_statement.value.type == "not_ip_set_reference_statement" ? [1] : []
+                              content {
+                                dynamic "ip_set_reference_statement" {
+                                  for_each = nested_statement.value.type == "not_ip_set_reference_statement" ? [jsondecode(nested_statement.value.statement)] : []
+                                  content {
+                                    arn = try(aws_wafv2_ip_set.default[local.ip_rule_to_reusable_ip_set[ip_set_reference_statement.value.set_name]], null) != null ? aws_wafv2_ip_set.default[local.ip_rule_to_reusable_ip_set[ip_set_reference_statement.value.set_name]].arn : (try(aws_wafv2_ip_set.default[local.ip_rule_to_ip_set[rule.key]], null) != null ? aws_wafv2_ip_set.default[local.ip_rule_to_ip_set[rule.key]].arn : try(ip_set_reference_statement.value.arn, null))
+
+                                    dynamic "ip_set_forwarded_ip_config" {
+                                      for_each = lookup(ip_set_reference_statement.value, "ip_set_forwarded_ip_config", null) != null ? [ip_set_reference_statement.value.ip_set_forwarded_ip_config] : []
+
+                                      content {
+                                        fallback_behavior = ip_set_forwarded_ip_config.value.fallback_behavior
+                                        header_name       = ip_set_forwarded_ip_config.value.header_name
+                                        position          = ip_set_forwarded_ip_config.value.position
+                                      }
+                                    }
                                   }
                                 }
                               }
@@ -4515,6 +4755,22 @@ resource "aws_wafv2_web_acl" "default" {
             dynamic "scope_down_statement" {
               for_each = lookup(stmt.value, "scope_down_statement", null) != null ? [stmt.value.scope_down_statement] : []
               content {
+                dynamic "ip_set_reference_statement" {
+                  for_each = scope_down_statement.value.ip_set_reference_statement != null ? [scope_down_statement.value.ip_set_reference_statement] : []
+                  content {
+                    arn = try(aws_wafv2_ip_set.default[local.ip_rule_to_reusable_ip_set[ip_set_reference_statement.value.set_name]], null) != null ? aws_wafv2_ip_set.default[local.ip_rule_to_reusable_ip_set[ip_set_reference_statement.value.set_name]].arn : (try(aws_wafv2_ip_set.default[local.ip_rule_to_ip_set[rule.key]], null) != null ? aws_wafv2_ip_set.default[local.ip_rule_to_ip_set[rule.key]].arn : try(ip_set_reference_statement.value.arn, null))
+
+                    dynamic "ip_set_forwarded_ip_config" {
+                      for_each = lookup(ip_set_reference_statement.value, "ip_set_forwarded_ip_config", null) != null ? [ip_set_reference_statement.value.ip_set_forwarded_ip_config] : []
+
+                      content {
+                        fallback_behavior = ip_set_forwarded_ip_config.value.fallback_behavior
+                        header_name       = ip_set_forwarded_ip_config.value.header_name
+                        position          = ip_set_forwarded_ip_config.value.position
+                      }
+                    }
+                  }
+                }
                 dynamic "regex_pattern_set_reference_statement" {
                   for_each = scope_down_statement.value.regex_pattern_set_reference_statement != null ? [scope_down_statement.value.regex_pattern_set_reference_statement] : []
                   content {
@@ -4763,7 +5019,7 @@ resource "aws_wafv2_web_acl" "default" {
                   }
                 }
                 dynamic "not_statement" {
-                  for_each = scope_down_statement.value.not_byte_match_statement != null || scope_down_statement.value.not_label_match_statement != null || scope_down_statement.value.not_regex_pattern_set_reference_statement != null || scope_down_statement.value.not_size_constraint_statement != null ? [1] : []
+                  for_each = scope_down_statement.value.not_byte_match_statement != null || scope_down_statement.value.not_label_match_statement != null || scope_down_statement.value.not_regex_pattern_set_reference_statement != null || scope_down_statement.value.not_size_constraint_statement != null || scope_down_statement.value.not_ip_set_reference_statement != null ? [1] : []
                   content {
                     dynamic "statement" {
                       for_each = scope_down_statement.value.not_size_constraint_statement != null ? [1] : []
@@ -4940,6 +5196,27 @@ resource "aws_wafv2_web_acl" "default" {
                           content {
                             scope = label_match_statement.value.scope
                             key   = label_match_statement.value.key
+                          }
+                        }
+                      }
+                    }
+                    dynamic "statement" {
+                      for_each = scope_down_statement.value.not_ip_set_reference_statement != null ? [1] : []
+                      content {
+                        dynamic "ip_set_reference_statement" {
+                          for_each = statement.value.not_ip_set_reference_statement != null ? [statement.value.not_ip_set_reference_statement] : []
+                          content {
+                            arn = try(aws_wafv2_ip_set.default[local.ip_rule_to_reusable_ip_set[ip_set_reference_statement.value.set_name]], null) != null ? aws_wafv2_ip_set.default[local.ip_rule_to_reusable_ip_set[ip_set_reference_statement.value.set_name]].arn : (try(aws_wafv2_ip_set.default[local.ip_rule_to_ip_set[rule.key]], null) != null ? aws_wafv2_ip_set.default[local.ip_rule_to_ip_set[rule.key]].arn : try(ip_set_reference_statement.value.arn, null))
+
+                            dynamic "ip_set_forwarded_ip_config" {
+                              for_each = lookup(ip_set_reference_statement.value, "ip_set_forwarded_ip_config", null) != null ? [ip_set_reference_statement.value.ip_set_forwarded_ip_config] : []
+
+                              content {
+                                fallback_behavior = ip_set_forwarded_ip_config.value.fallback_behavior
+                                header_name       = ip_set_forwarded_ip_config.value.header_name
+                                position          = ip_set_forwarded_ip_config.value.position
+                              }
+                            }
                           }
                         }
                       }
@@ -5281,6 +5558,22 @@ resource "aws_wafv2_web_acl" "default" {
                             }
                           }
                         }
+                        dynamic "ip_set_reference_statement" {
+                          for_each = nested_statement.value.type == "ip_set_reference_statement" ? [jsondecode(nested_statement.value.statement)] : []
+                          content {
+                            arn = try(aws_wafv2_ip_set.default[local.ip_rule_to_reusable_ip_set[ip_set_reference_statement.value.set_name]], null) != null ? aws_wafv2_ip_set.default[local.ip_rule_to_reusable_ip_set[ip_set_reference_statement.value.set_name]].arn : (try(aws_wafv2_ip_set.default[local.ip_rule_to_ip_set[rule.key]], null) != null ? aws_wafv2_ip_set.default[local.ip_rule_to_ip_set[rule.key]].arn : try(ip_set_reference_statement.value.arn, null))
+
+                            dynamic "ip_set_forwarded_ip_config" {
+                              for_each = lookup(ip_set_reference_statement.value, "ip_set_forwarded_ip_config", null) != null ? [ip_set_reference_statement.value.ip_set_forwarded_ip_config] : []
+
+                              content {
+                                fallback_behavior = ip_set_forwarded_ip_config.value.fallback_behavior
+                                header_name       = ip_set_forwarded_ip_config.value.header_name
+                                position          = ip_set_forwarded_ip_config.value.position
+                              }
+                            }
+                          }
+                        }
                         dynamic "label_match_statement" {
                           for_each = nested_statement.value.type == "label_match_statement" ? [jsondecode(nested_statement.value.statement)] : []
                           content {
@@ -5289,7 +5582,7 @@ resource "aws_wafv2_web_acl" "default" {
                           }
                         }
                         dynamic "not_statement" {
-                          for_each = nested_statement.value.type == "not_byte_match_statement" || nested_statement.value.type == "not_label_match_statement" || nested_statement.value.type == "not_regex_pattern_set_reference_statement" || nested_statement.value.type == "not_size_constraint_statement" ? [1] : []
+                          for_each = nested_statement.value.type == "not_byte_match_statement" || nested_statement.value.type == "not_label_match_statement" || nested_statement.value.type == "not_regex_pattern_set_reference_statement" || nested_statement.value.type == "not_size_constraint_statement" || nested_statement.value.type == "not_ip_set_reference_statement" ? [1] : []
                           content {
                             dynamic "statement" {
                               iterator = nested_not_statement
@@ -5461,6 +5754,7 @@ resource "aws_wafv2_web_acl" "default" {
                                 }
                               }
                             }
+
                             dynamic "statement" {
                               iterator = nested_not_statement
                               for_each = nested_statement.value.type != null && nested_statement.value.type == "not_label_match_statement" ? [1] : []
@@ -5470,6 +5764,29 @@ resource "aws_wafv2_web_acl" "default" {
                                   content {
                                     scope = label_match_statement.value.scope
                                     key   = label_match_statement.value.key
+                                  }
+                                }
+                              }
+                            }
+
+                            dynamic "statement" {
+                              iterator = nested_not_statement
+                              for_each = nested_statement.value.type != null && nested_statement.value.type == "not_ip_set_reference_statement" ? [1] : []
+                              content {
+                                dynamic "ip_set_reference_statement" {
+                                  for_each = nested_statement.value.type == "not_ip_set_reference_statement" ? [jsondecode(nested_statement.value.statement)] : []
+                                  content {
+                                    arn = try(aws_wafv2_ip_set.default[local.ip_rule_to_reusable_ip_set[ip_set_reference_statement.value.set_name]], null) != null ? aws_wafv2_ip_set.default[local.ip_rule_to_reusable_ip_set[ip_set_reference_statement.value.set_name]].arn : (try(aws_wafv2_ip_set.default[local.ip_rule_to_ip_set[rule.key]], null) != null ? aws_wafv2_ip_set.default[local.ip_rule_to_ip_set[rule.key]].arn : try(ip_set_reference_statement.value.arn, null))
+
+                                    dynamic "ip_set_forwarded_ip_config" {
+                                      for_each = lookup(ip_set_reference_statement.value, "ip_set_forwarded_ip_config", null) != null ? [ip_set_reference_statement.value.ip_set_forwarded_ip_config] : []
+
+                                      content {
+                                        fallback_behavior = ip_set_forwarded_ip_config.value.fallback_behavior
+                                        header_name       = ip_set_forwarded_ip_config.value.header_name
+                                        position          = ip_set_forwarded_ip_config.value.position
+                                      }
+                                    }
                                   }
                                 }
                               }
@@ -5566,6 +5883,7 @@ resource "aws_wafv2_web_acl" "default" {
                         }
                       }
                     }
+
                   }
                 }
                 dynamic "or_statement" {
@@ -5815,6 +6133,22 @@ resource "aws_wafv2_web_acl" "default" {
                             }
                           }
                         }
+                        dynamic "ip_set_reference_statement" {
+                          for_each = nested_statement.value.type == "ip_set_reference_statement" ? [jsondecode(nested_statement.value.statement)] : []
+                          content {
+                            arn = try(aws_wafv2_ip_set.default[local.ip_rule_to_reusable_ip_set[ip_set_reference_statement.value.set_name]], null) != null ? aws_wafv2_ip_set.default[local.ip_rule_to_reusable_ip_set[ip_set_reference_statement.value.set_name]].arn : (try(aws_wafv2_ip_set.default[local.ip_rule_to_ip_set[rule.key]], null) != null ? aws_wafv2_ip_set.default[local.ip_rule_to_ip_set[rule.key]].arn : try(ip_set_reference_statement.value.arn, null))
+
+                            dynamic "ip_set_forwarded_ip_config" {
+                              for_each = lookup(ip_set_reference_statement.value, "ip_set_forwarded_ip_config", null) != null ? [ip_set_reference_statement.value.ip_set_forwarded_ip_config] : []
+
+                              content {
+                                fallback_behavior = ip_set_forwarded_ip_config.value.fallback_behavior
+                                header_name       = ip_set_forwarded_ip_config.value.header_name
+                                position          = ip_set_forwarded_ip_config.value.position
+                              }
+                            }
+                          }
+                        }
                         dynamic "label_match_statement" {
                           for_each = nested_statement.value.type == "label_match_statement" ? [jsondecode(nested_statement.value.statement)] : []
                           content {
@@ -5823,7 +6157,7 @@ resource "aws_wafv2_web_acl" "default" {
                           }
                         }
                         dynamic "not_statement" {
-                          for_each = nested_statement.value.type == "not_byte_match_statement" || nested_statement.value.type == "not_label_match_statement" || nested_statement.value.type == "not_regex_pattern_set_reference_statement" || nested_statement.value.type == "not_size_constraint_statement" ? [1] : []
+                          for_each = nested_statement.value.type == "not_byte_match_statement" || nested_statement.value.type == "not_label_match_statement" || nested_statement.value.type == "not_regex_pattern_set_reference_statement" || nested_statement.value.type == "not_size_constraint_statement" || nested_statement.value.type == "not_ip_set_reference_statement" ? [1] : []
                           content {
                             dynamic "statement" {
                               iterator = nested_not_statement
@@ -5994,6 +6328,7 @@ resource "aws_wafv2_web_acl" "default" {
                                 }
                               }
                             }
+
                             dynamic "statement" {
                               iterator = nested_not_statement
                               for_each = nested_statement.value.type != null && nested_statement.value.type == "not_label_match_statement" ? [1] : []
@@ -6003,6 +6338,29 @@ resource "aws_wafv2_web_acl" "default" {
                                   content {
                                     scope = label_match_statement.value.scope
                                     key   = label_match_statement.value.key
+                                  }
+                                }
+                              }
+                            }
+
+                            dynamic "statement" {
+                              iterator = nested_not_statement
+                              for_each = nested_statement.value.type != null && nested_statement.value.type == "not_ip_set_reference_statement" ? [1] : []
+                              content {
+                                dynamic "ip_set_reference_statement" {
+                                  for_each = nested_statement.value.type == "not_ip_set_reference_statement" ? [jsondecode(nested_statement.value.statement)] : []
+                                  content {
+                                    arn = try(aws_wafv2_ip_set.default[local.ip_rule_to_reusable_ip_set[ip_set_reference_statement.value.set_name]], null) != null ? aws_wafv2_ip_set.default[local.ip_rule_to_reusable_ip_set[ip_set_reference_statement.value.set_name]].arn : (try(aws_wafv2_ip_set.default[local.ip_rule_to_ip_set[rule.key]], null) != null ? aws_wafv2_ip_set.default[local.ip_rule_to_ip_set[rule.key]].arn : try(ip_set_reference_statement.value.arn, null))
+
+                                    dynamic "ip_set_forwarded_ip_config" {
+                                      for_each = lookup(ip_set_reference_statement.value, "ip_set_forwarded_ip_config", null) != null ? [ip_set_reference_statement.value.ip_set_forwarded_ip_config] : []
+
+                                      content {
+                                        fallback_behavior = ip_set_forwarded_ip_config.value.fallback_behavior
+                                        header_name       = ip_set_forwarded_ip_config.value.header_name
+                                        position          = ip_set_forwarded_ip_config.value.position
+                                      }
+                                    }
                                   }
                                 }
                               }
@@ -6569,6 +6927,22 @@ resource "aws_wafv2_web_acl" "default" {
             dynamic "scope_down_statement" {
               for_each = lookup(stmt.value, "scope_down_statement", null) != null ? [stmt.value.scope_down_statement] : []
               content {
+                dynamic "ip_set_reference_statement" {
+                  for_each = scope_down_statement.value.ip_set_reference_statement != null ? [scope_down_statement.value.ip_set_reference_statement] : []
+                  content {
+                    arn = try(aws_wafv2_ip_set.default[local.ip_rule_to_reusable_ip_set[ip_set_reference_statement.value.set_name]], null) != null ? aws_wafv2_ip_set.default[local.ip_rule_to_reusable_ip_set[ip_set_reference_statement.value.set_name]].arn : (try(aws_wafv2_ip_set.default[local.ip_rule_to_ip_set[rule.key]], null) != null ? aws_wafv2_ip_set.default[local.ip_rule_to_ip_set[rule.key]].arn : try(ip_set_reference_statement.value.arn, null))
+
+                    dynamic "ip_set_forwarded_ip_config" {
+                      for_each = lookup(ip_set_reference_statement.value, "ip_set_forwarded_ip_config", null) != null ? [ip_set_reference_statement.value.ip_set_forwarded_ip_config] : []
+
+                      content {
+                        fallback_behavior = ip_set_forwarded_ip_config.value.fallback_behavior
+                        header_name       = ip_set_forwarded_ip_config.value.header_name
+                        position          = ip_set_forwarded_ip_config.value.position
+                      }
+                    }
+                  }
+                }
                 dynamic "regex_pattern_set_reference_statement" {
                   for_each = scope_down_statement.value.regex_pattern_set_reference_statement != null ? [scope_down_statement.value.regex_pattern_set_reference_statement] : []
                   content {
@@ -6817,7 +7191,7 @@ resource "aws_wafv2_web_acl" "default" {
                   }
                 }
                 dynamic "not_statement" {
-                  for_each = scope_down_statement.value.not_byte_match_statement != null || scope_down_statement.value.not_label_match_statement != null || scope_down_statement.value.not_regex_pattern_set_reference_statement != null || scope_down_statement.value.not_size_constraint_statement != null ? [1] : []
+                  for_each = scope_down_statement.value.not_byte_match_statement != null || scope_down_statement.value.not_label_match_statement != null || scope_down_statement.value.not_regex_pattern_set_reference_statement != null || scope_down_statement.value.not_size_constraint_statement != null || scope_down_statement.value.not_ip_set_reference_statement != null ? [1] : []
                   content {
                     dynamic "statement" {
                       for_each = scope_down_statement.value.not_size_constraint_statement != null ? [1] : []
@@ -6994,6 +7368,27 @@ resource "aws_wafv2_web_acl" "default" {
                           content {
                             scope = label_match_statement.value.scope
                             key   = label_match_statement.value.key
+                          }
+                        }
+                      }
+                    }
+                    dynamic "statement" {
+                      for_each = scope_down_statement.value.not_ip_set_reference_statement != null ? [1] : []
+                      content {
+                        dynamic "ip_set_reference_statement" {
+                          for_each = statement.value.not_ip_set_reference_statement != null ? [statement.value.not_ip_set_reference_statement] : []
+                          content {
+                            arn = try(aws_wafv2_ip_set.default[local.ip_rule_to_reusable_ip_set[ip_set_reference_statement.value.set_name]], null) != null ? aws_wafv2_ip_set.default[local.ip_rule_to_reusable_ip_set[ip_set_reference_statement.value.set_name]].arn : (try(aws_wafv2_ip_set.default[local.ip_rule_to_ip_set[rule.key]], null) != null ? aws_wafv2_ip_set.default[local.ip_rule_to_ip_set[rule.key]].arn : try(ip_set_reference_statement.value.arn, null))
+
+                            dynamic "ip_set_forwarded_ip_config" {
+                              for_each = lookup(ip_set_reference_statement.value, "ip_set_forwarded_ip_config", null) != null ? [ip_set_reference_statement.value.ip_set_forwarded_ip_config] : []
+
+                              content {
+                                fallback_behavior = ip_set_forwarded_ip_config.value.fallback_behavior
+                                header_name       = ip_set_forwarded_ip_config.value.header_name
+                                position          = ip_set_forwarded_ip_config.value.position
+                              }
+                            }
                           }
                         }
                       }
@@ -7335,6 +7730,22 @@ resource "aws_wafv2_web_acl" "default" {
                             }
                           }
                         }
+                        dynamic "ip_set_reference_statement" {
+                          for_each = nested_statement.value.type == "ip_set_reference_statement" ? [jsondecode(nested_statement.value.statement)] : []
+                          content {
+                            arn = try(aws_wafv2_ip_set.default[local.ip_rule_to_reusable_ip_set[ip_set_reference_statement.value.set_name]], null) != null ? aws_wafv2_ip_set.default[local.ip_rule_to_reusable_ip_set[ip_set_reference_statement.value.set_name]].arn : (try(aws_wafv2_ip_set.default[local.ip_rule_to_ip_set[rule.key]], null) != null ? aws_wafv2_ip_set.default[local.ip_rule_to_ip_set[rule.key]].arn : try(ip_set_reference_statement.value.arn, null))
+
+                            dynamic "ip_set_forwarded_ip_config" {
+                              for_each = lookup(ip_set_reference_statement.value, "ip_set_forwarded_ip_config", null) != null ? [ip_set_reference_statement.value.ip_set_forwarded_ip_config] : []
+
+                              content {
+                                fallback_behavior = ip_set_forwarded_ip_config.value.fallback_behavior
+                                header_name       = ip_set_forwarded_ip_config.value.header_name
+                                position          = ip_set_forwarded_ip_config.value.position
+                              }
+                            }
+                          }
+                        }
                         dynamic "label_match_statement" {
                           for_each = nested_statement.value.type == "label_match_statement" ? [jsondecode(nested_statement.value.statement)] : []
                           content {
@@ -7343,7 +7754,7 @@ resource "aws_wafv2_web_acl" "default" {
                           }
                         }
                         dynamic "not_statement" {
-                          for_each = nested_statement.value.type == "not_byte_match_statement" || nested_statement.value.type == "not_label_match_statement" || nested_statement.value.type == "not_regex_pattern_set_reference_statement" || nested_statement.value.type == "not_size_constraint_statement" ? [1] : []
+                          for_each = nested_statement.value.type == "not_byte_match_statement" || nested_statement.value.type == "not_label_match_statement" || nested_statement.value.type == "not_regex_pattern_set_reference_statement" || nested_statement.value.type == "not_size_constraint_statement" || nested_statement.value.type == "not_ip_set_reference_statement" ? [1] : []
                           content {
                             dynamic "statement" {
                               iterator = nested_not_statement
@@ -7515,6 +7926,7 @@ resource "aws_wafv2_web_acl" "default" {
                                 }
                               }
                             }
+
                             dynamic "statement" {
                               iterator = nested_not_statement
                               for_each = nested_statement.value.type != null && nested_statement.value.type == "not_label_match_statement" ? [1] : []
@@ -7524,6 +7936,29 @@ resource "aws_wafv2_web_acl" "default" {
                                   content {
                                     scope = label_match_statement.value.scope
                                     key   = label_match_statement.value.key
+                                  }
+                                }
+                              }
+                            }
+
+                            dynamic "statement" {
+                              iterator = nested_not_statement
+                              for_each = nested_statement.value.type != null && nested_statement.value.type == "not_ip_set_reference_statement" ? [1] : []
+                              content {
+                                dynamic "ip_set_reference_statement" {
+                                  for_each = nested_statement.value.type == "not_ip_set_reference_statement" ? [jsondecode(nested_statement.value.statement)] : []
+                                  content {
+                                    arn = try(aws_wafv2_ip_set.default[local.ip_rule_to_reusable_ip_set[ip_set_reference_statement.value.set_name]], null) != null ? aws_wafv2_ip_set.default[local.ip_rule_to_reusable_ip_set[ip_set_reference_statement.value.set_name]].arn : (try(aws_wafv2_ip_set.default[local.ip_rule_to_ip_set[rule.key]], null) != null ? aws_wafv2_ip_set.default[local.ip_rule_to_ip_set[rule.key]].arn : try(ip_set_reference_statement.value.arn, null))
+
+                                    dynamic "ip_set_forwarded_ip_config" {
+                                      for_each = lookup(ip_set_reference_statement.value, "ip_set_forwarded_ip_config", null) != null ? [ip_set_reference_statement.value.ip_set_forwarded_ip_config] : []
+
+                                      content {
+                                        fallback_behavior = ip_set_forwarded_ip_config.value.fallback_behavior
+                                        header_name       = ip_set_forwarded_ip_config.value.header_name
+                                        position          = ip_set_forwarded_ip_config.value.position
+                                      }
+                                    }
                                   }
                                 }
                               }
@@ -7620,6 +8055,7 @@ resource "aws_wafv2_web_acl" "default" {
                         }
                       }
                     }
+
                   }
                 }
                 dynamic "or_statement" {
@@ -7869,6 +8305,22 @@ resource "aws_wafv2_web_acl" "default" {
                             }
                           }
                         }
+                        dynamic "ip_set_reference_statement" {
+                          for_each = nested_statement.value.type == "ip_set_reference_statement" ? [jsondecode(nested_statement.value.statement)] : []
+                          content {
+                            arn = try(aws_wafv2_ip_set.default[local.ip_rule_to_reusable_ip_set[ip_set_reference_statement.value.set_name]], null) != null ? aws_wafv2_ip_set.default[local.ip_rule_to_reusable_ip_set[ip_set_reference_statement.value.set_name]].arn : (try(aws_wafv2_ip_set.default[local.ip_rule_to_ip_set[rule.key]], null) != null ? aws_wafv2_ip_set.default[local.ip_rule_to_ip_set[rule.key]].arn : try(ip_set_reference_statement.value.arn, null))
+
+                            dynamic "ip_set_forwarded_ip_config" {
+                              for_each = lookup(ip_set_reference_statement.value, "ip_set_forwarded_ip_config", null) != null ? [ip_set_reference_statement.value.ip_set_forwarded_ip_config] : []
+
+                              content {
+                                fallback_behavior = ip_set_forwarded_ip_config.value.fallback_behavior
+                                header_name       = ip_set_forwarded_ip_config.value.header_name
+                                position          = ip_set_forwarded_ip_config.value.position
+                              }
+                            }
+                          }
+                        }
                         dynamic "label_match_statement" {
                           for_each = nested_statement.value.type == "label_match_statement" ? [jsondecode(nested_statement.value.statement)] : []
                           content {
@@ -7877,7 +8329,7 @@ resource "aws_wafv2_web_acl" "default" {
                           }
                         }
                         dynamic "not_statement" {
-                          for_each = nested_statement.value.type == "not_byte_match_statement" || nested_statement.value.type == "not_label_match_statement" || nested_statement.value.type == "not_regex_pattern_set_reference_statement" || nested_statement.value.type == "not_size_constraint_statement" ? [1] : []
+                          for_each = nested_statement.value.type == "not_byte_match_statement" || nested_statement.value.type == "not_label_match_statement" || nested_statement.value.type == "not_regex_pattern_set_reference_statement" || nested_statement.value.type == "not_size_constraint_statement" || nested_statement.value.type == "not_ip_set_reference_statement" ? [1] : []
                           content {
                             dynamic "statement" {
                               iterator = nested_not_statement
@@ -8048,6 +8500,7 @@ resource "aws_wafv2_web_acl" "default" {
                                 }
                               }
                             }
+
                             dynamic "statement" {
                               iterator = nested_not_statement
                               for_each = nested_statement.value.type != null && nested_statement.value.type == "not_label_match_statement" ? [1] : []
@@ -8057,6 +8510,29 @@ resource "aws_wafv2_web_acl" "default" {
                                   content {
                                     scope = label_match_statement.value.scope
                                     key   = label_match_statement.value.key
+                                  }
+                                }
+                              }
+                            }
+
+                            dynamic "statement" {
+                              iterator = nested_not_statement
+                              for_each = nested_statement.value.type != null && nested_statement.value.type == "not_ip_set_reference_statement" ? [1] : []
+                              content {
+                                dynamic "ip_set_reference_statement" {
+                                  for_each = nested_statement.value.type == "not_ip_set_reference_statement" ? [jsondecode(nested_statement.value.statement)] : []
+                                  content {
+                                    arn = try(aws_wafv2_ip_set.default[local.ip_rule_to_reusable_ip_set[ip_set_reference_statement.value.set_name]], null) != null ? aws_wafv2_ip_set.default[local.ip_rule_to_reusable_ip_set[ip_set_reference_statement.value.set_name]].arn : (try(aws_wafv2_ip_set.default[local.ip_rule_to_ip_set[rule.key]], null) != null ? aws_wafv2_ip_set.default[local.ip_rule_to_ip_set[rule.key]].arn : try(ip_set_reference_statement.value.arn, null))
+
+                                    dynamic "ip_set_forwarded_ip_config" {
+                                      for_each = lookup(ip_set_reference_statement.value, "ip_set_forwarded_ip_config", null) != null ? [ip_set_reference_statement.value.ip_set_forwarded_ip_config] : []
+
+                                      content {
+                                        fallback_behavior = ip_set_forwarded_ip_config.value.fallback_behavior
+                                        header_name       = ip_set_forwarded_ip_config.value.header_name
+                                        position          = ip_set_forwarded_ip_config.value.position
+                                      }
+                                    }
                                   }
                                 }
                               }
@@ -8383,6 +8859,23 @@ resource "aws_wafv2_web_acl" "default" {
             dynamic "statement" {
               for_each = try(and_statement.value.statements, [])
               content {
+                dynamic "ip_set_reference_statement" {
+                  for_each = statement.value.ip_set_reference_statement != null ? [statement.value.ip_set_reference_statement] : []
+                  content {
+
+                    arn = try(aws_wafv2_ip_set.default[local.ip_rule_to_reusable_ip_set[ip_set_reference_statement.value.set_name]], null) != null ? aws_wafv2_ip_set.default[local.ip_rule_to_reusable_ip_set[ip_set_reference_statement.value.set_name]].arn : (try(aws_wafv2_ip_set.default[local.ip_rule_to_ip_set[rule.key]], null) != null ? aws_wafv2_ip_set.default[local.ip_rule_to_ip_set[rule.key]].arn : try(ip_set_reference_statement.value.arn, null))
+
+                    dynamic "ip_set_forwarded_ip_config" {
+                      for_each = lookup(ip_set_reference_statement.value, "ip_set_forwarded_ip_config", null) != null ? [ip_set_reference_statement.value.ip_set_forwarded_ip_config] : []
+
+                      content {
+                        fallback_behavior = ip_set_forwarded_ip_config.value.fallback_behavior
+                        header_name       = ip_set_forwarded_ip_config.value.header_name
+                        position          = ip_set_forwarded_ip_config.value.position
+                      }
+                    }
+                  }
+                }
                 dynamic "regex_pattern_set_reference_statement" {
                   for_each = statement.value.regex_pattern_set_reference_statement != null ? [statement.value.regex_pattern_set_reference_statement] : []
                   content {
@@ -8631,7 +9124,7 @@ resource "aws_wafv2_web_acl" "default" {
                   }
                 }
                 dynamic "not_statement" {
-                  for_each = statement.value.not_byte_match_statement != null || statement.value.not_label_match_statement != null || statement.value.not_regex_pattern_set_reference_statement != null || statement.value.not_size_constraint_statement != null ? [1] : []
+                  for_each = statement.value.not_byte_match_statement != null || statement.value.not_label_match_statement != null || statement.value.not_regex_pattern_set_reference_statement != null || statement.value.not_size_constraint_statement != null || statement.value.not_ip_set_reference_statement != null ? [1] : []
                   content {
                     dynamic "statement" {
                       for_each = statement.value.not_byte_match_statement != null ? [1] : []
@@ -8813,6 +9306,28 @@ resource "aws_wafv2_web_acl" "default" {
                         }
                       }
                     }
+
+                    dynamic "statement" {
+                      for_each = statement.value.not_ip_set_reference_statement != null ? [1] : []
+                      content {
+                        dynamic "ip_set_reference_statement" {
+                          for_each = statement.value.not_ip_set_reference_statement != null ? [statement.value.not_ip_set_reference_statement] : []
+                          content {
+                            arn = try(aws_wafv2_ip_set.default[local.ip_rule_to_reusable_ip_set[ip_set_reference_statement.value.set_name]], null) != null ? aws_wafv2_ip_set.default[local.ip_rule_to_reusable_ip_set[ip_set_reference_statement.value.set_name]].arn : (try(aws_wafv2_ip_set.default[local.ip_rule_to_ip_set[rule.key]], null) != null ? aws_wafv2_ip_set.default[local.ip_rule_to_ip_set[rule.key]].arn : try(ip_set_reference_statement.value.arn, null))
+
+                            dynamic "ip_set_forwarded_ip_config" {
+                              for_each = lookup(ip_set_reference_statement.value, "ip_set_forwarded_ip_config", null) != null ? [ip_set_reference_statement.value.ip_set_forwarded_ip_config] : []
+
+                              content {
+                                fallback_behavior = ip_set_forwarded_ip_config.value.fallback_behavior
+                                header_name       = ip_set_forwarded_ip_config.value.header_name
+                                position          = ip_set_forwarded_ip_config.value.position
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
                     dynamic "statement" {
                       for_each = statement.value.not_regex_pattern_set_reference_statement != null ? [1] : []
                       content {
@@ -8912,6 +9427,23 @@ resource "aws_wafv2_web_acl" "default" {
             dynamic "statement" {
               for_each = try(or_statement.value.statements, [])
               content {
+                dynamic "ip_set_reference_statement" {
+                  for_each = statement.value.ip_set_reference_statement != null ? [statement.value.ip_set_reference_statement] : []
+                  content {
+
+                    arn = try(aws_wafv2_ip_set.default[local.ip_rule_to_reusable_ip_set[ip_set_reference_statement.value.set_name]], null) != null ? aws_wafv2_ip_set.default[local.ip_rule_to_reusable_ip_set[ip_set_reference_statement.value.set_name]].arn : (try(aws_wafv2_ip_set.default[local.ip_rule_to_ip_set[rule.key]], null) != null ? aws_wafv2_ip_set.default[local.ip_rule_to_ip_set[rule.key]].arn : try(ip_set_reference_statement.value.arn, null))
+
+                    dynamic "ip_set_forwarded_ip_config" {
+                      for_each = lookup(ip_set_reference_statement.value, "ip_set_forwarded_ip_config", null) != null ? [ip_set_reference_statement.value.ip_set_forwarded_ip_config] : []
+
+                      content {
+                        fallback_behavior = ip_set_forwarded_ip_config.value.fallback_behavior
+                        header_name       = ip_set_forwarded_ip_config.value.header_name
+                        position          = ip_set_forwarded_ip_config.value.position
+                      }
+                    }
+                  }
+                }
                 dynamic "regex_pattern_set_reference_statement" {
                   for_each = statement.value.regex_pattern_set_reference_statement != null ? [statement.value.regex_pattern_set_reference_statement] : []
                   content {
@@ -9160,7 +9692,7 @@ resource "aws_wafv2_web_acl" "default" {
                   }
                 }
                 dynamic "not_statement" {
-                  for_each = statement.value.not_byte_match_statement != null || statement.value.not_label_match_statement != null || statement.value.not_regex_pattern_set_reference_statement != null || statement.value.not_size_constraint_statement != null ? [1] : []
+                  for_each = statement.value.not_byte_match_statement != null || statement.value.not_label_match_statement != null || statement.value.not_regex_pattern_set_reference_statement != null || statement.value.not_size_constraint_statement != null || statement.value.not_ip_set_reference_statement != null ? [1] : []
                   content {
                     dynamic "statement" {
                       for_each = statement.value.not_byte_match_statement != null ? [1] : []
@@ -9324,6 +9856,27 @@ resource "aws_wafv2_web_acl" "default" {
                               content {
                                 priority = text_transformation.value.priority
                                 type     = text_transformation.value.type
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                    dynamic "statement" {
+                      for_each = statement.value.not_ip_set_reference_statement != null ? [1] : []
+                      content {
+                        dynamic "ip_set_reference_statement" {
+                          for_each = statement.value.not_ip_set_reference_statement != null ? [statement.value.not_ip_set_reference_statement] : []
+                          content {
+                            arn = try(aws_wafv2_ip_set.default[local.ip_rule_to_reusable_ip_set[ip_set_reference_statement.value.set_name]], null) != null ? aws_wafv2_ip_set.default[local.ip_rule_to_reusable_ip_set[ip_set_reference_statement.value.set_name]].arn : (try(aws_wafv2_ip_set.default[local.ip_rule_to_ip_set[rule.key]], null) != null ? aws_wafv2_ip_set.default[local.ip_rule_to_ip_set[rule.key]].arn : try(ip_set_reference_statement.value.arn, null))
+
+                            dynamic "ip_set_forwarded_ip_config" {
+                              for_each = lookup(ip_set_reference_statement.value, "ip_set_forwarded_ip_config", null) != null ? [ip_set_reference_statement.value.ip_set_forwarded_ip_config] : []
+
+                              content {
+                                fallback_behavior = ip_set_forwarded_ip_config.value.fallback_behavior
+                                header_name       = ip_set_forwarded_ip_config.value.header_name
+                                position          = ip_set_forwarded_ip_config.value.position
                               }
                             }
                           }

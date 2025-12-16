@@ -319,6 +319,33 @@ variable "geo_match_statement_rules" {
   DOC
 }
 
+variable "reusable_ip_sets" {
+  type = list(object({
+    name = string
+    ip_set = object({
+      description        = optional(string)
+      addresses          = list(string)
+      ip_address_version = string
+    })
+  }))
+  default     = null
+  description = <<-DOC
+    An additional ip set that can be included within a rule 
+
+    name:
+      A friendly name of the ip set.
+
+    ip_set:
+        description:
+          A friendly description of the IP Set
+        addresses:
+          Contains an array of strings that specifies zero or more IP addresses or blocks of IP addresses.
+          All addresses must be specified using Classless Inter-Domain Routing (CIDR) notation.
+        ip_address_version:
+          Specify `IPV4` or `IPV6`
+  DOC
+}
+
 variable "ip_set_reference_statement_rules" {
   type = list(object({
     name     = string
@@ -459,6 +486,14 @@ variable "managed_rule_group_statement_rules" {
         label_match_statement = optional(object({
           key   = string
           scope = string
+        }), null)
+        ip_set_reference_statement = optional(object({
+          arn      = optional(string)
+          set_name = optional(string)
+        }), null)
+        not_ip_set_reference_statement = optional(object({
+          arn      = optional(string)
+          set_name = optional(string)
         }), null)
         regex_pattern_set_reference_statement = optional(object({
           arn      = optional(string)
@@ -803,6 +838,14 @@ variable "rate_based_statement_rules" {
           key   = string
           scope = string
         }), null)
+        ip_set_reference_statement = optional(object({
+          arn      = optional(string)
+          set_name = optional(string)
+        }), null)
+        not_ip_set_reference_statement = optional(object({
+          arn      = optional(string)
+          set_name = optional(string)
+        }), null)
         regex_pattern_set_reference_statement = optional(object({
           arn      = optional(string)
           set_name = optional(string)
@@ -983,7 +1026,8 @@ variable "reusable_regex_pattern_sets" {
   type = list(object({
     name = string
     regex_pattern_set = object({
-      regexes = list(string)
+      description = optional(string)
+      regexes     = list(string)
     })
   }))
   default     = null
@@ -1139,6 +1183,14 @@ variable "regex_match_statement_rules" {
         label_match_statement = optional(object({
           key   = string
           scope = string
+        }), null)
+        ip_set_reference_statement = optional(object({
+          arn      = optional(string)
+          set_name = optional(string)
+        }), null)
+        not_ip_set_reference_statement = optional(object({
+          arn      = optional(string)
+          set_name = optional(string)
         }), null)
         regex_pattern_set_reference_statement = optional(object({
           arn      = optional(string)
@@ -1529,6 +1581,14 @@ variable "sqli_match_statement_rules" {
         label_match_statement = optional(object({
           key   = string
           scope = string
+        }), null)
+        ip_set_reference_statement = optional(object({
+          arn      = optional(string)
+          set_name = optional(string)
+        }), null)
+        not_ip_set_reference_statement = optional(object({
+          arn      = optional(string)
+          set_name = optional(string)
         }), null)
         regex_pattern_set_reference_statement = optional(object({
           arn      = optional(string)

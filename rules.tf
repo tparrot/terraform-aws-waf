@@ -6844,6 +6844,8 @@ resource "aws_wafv2_web_acl" "default" {
           for_each = lookup(rule.value, "statement", null) != null ? [rule.value.statement] : []
 
           content {
+            sensitivity_level = lookup(rule.value.statement, "sensitivity_level")
+
             dynamic "field_to_match" {
               for_each = lookup(rule.value.statement, "field_to_match", null) != null ? [rule.value.statement.field_to_match] : []
 

@@ -1528,6 +1528,7 @@ variable "sqli_match_statement_rules" {
     }), null)
     rule_label = optional(list(string), null)
     statement = object({
+      sensitivity_level = optional(string, "LOW")
       field_to_match = object({
         all_query_arguments   = optional(bool)
         body                  = optional(bool)
@@ -1715,6 +1716,8 @@ variable "sqli_match_statement_rules" {
        The amount of time, in seconds, that a CAPTCHA or challenge timestamp is considered valid by AWS WAF. The default setting is 300.
 
     statement:
+      sensitivity_level:
+        Either LOW or HIGH. Specify how sensitive you want the inspection for SQL injection attacks to be. High detects more attacks and is recommended, but it might require additional tuning to mitigate false positives. Low can be a better choice if you have other rules against SQL injection attacks or a low tolerance for false positives.
       field_to_match:
         The part of a web request that you want AWS WAF to inspect.
         See https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/wafv2_web_acl#field-to-match

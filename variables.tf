@@ -1057,7 +1057,29 @@ variable "regex_pattern_set_reference_statement_rules" {
       })
     }), null)
     rule_label = optional(list(string), null)
-    statement  = any
+    statement  = object({
+      arn      = optional(string)
+      set_name = optional(string)
+      regex_pattern_set = optional(object({
+        description = optional(string)
+        regexes = list(string)
+      }))
+      field_to_match = object({
+        all_query_arguments   = optional(bool)
+        body                  = optional(bool)
+        method                = optional(bool)
+        query_string          = optional(bool)
+        ja3_fingerprint       = optional(object({ fallback_behavior = string }))
+        ja4_fingerprint       = optional(object({ fallback_behavior = string }))
+        single_header         = optional(object({ name = string }))
+        single_query_argument = optional(object({ name = string }))
+        uri_path              = optional(bool)
+      })
+      text_transformation = list(object({
+        priority = number
+        type     = string
+      }))
+    })
     visibility_config = optional(object({
       cloudwatch_metrics_enabled = optional(bool)
       metric_name                = string
@@ -1091,9 +1113,11 @@ variable "regex_pattern_set_reference_statement_rules" {
 
     statement:
       arn:
-         The Amazon Resource Name (ARN) of the Regex Pattern Set that this statement references.
+        The Amazon Resource Name (ARN) of the Regex Pattern Set that this statement references.
+      set_name:
+        Uses exisiting set by name set here. Overrides ARN
       regex_pattern_set:
-        Defines a new Regex Pattern Set if ARN is not given
+        Defines a new Regex Pattern Set if ARN is not given and set_name is empty
         description:
           A friendly description of the Regex Pattern Set
         regexes:

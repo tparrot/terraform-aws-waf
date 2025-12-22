@@ -1057,12 +1057,12 @@ variable "regex_pattern_set_reference_statement_rules" {
       })
     }), null)
     rule_label = optional(list(string), null)
-    statement  = object({
+    statement = object({
       arn      = optional(string)
       set_name = optional(string)
       regex_pattern_set = optional(object({
         description = optional(string)
-        regexes = list(string)
+        regexes     = list(string)
       }))
       field_to_match = object({
         all_query_arguments   = optional(bool)

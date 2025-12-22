@@ -1,8 +1,10 @@
 name        = "waf"
 environment = "fra"
 stage       = "staging"
+region      = "eu-central-1"
 
-association_resource_arns = ["arn:aws:elasticloadbalancing:eu-central-1:ACCOUNTID:loadbalancer/app/alb..."]
+# Unset for automated testing
+# association_resource_arns = ["arn:aws:elasticloadbalancing:eu-central-1:ACCOUNTID:loadbalancer/app/alb..."]
 
 # Managed Rules
 rule_AWS_AWSManagedRulesAmazonIpReputationList_override_action = null

@@ -1,6 +1,6 @@
 module "waf" {
   source = "../.."
-  
+
   # Context
   enabled     = true
   environment = var.environment
@@ -22,9 +22,10 @@ module "waf" {
     }
   }
 
-  association_resource_arns = var.association_resource_arns
-  default_action            = "allow"
-  description               = "This is a generic WebACL for ${var.environment}-${var.stage} ALBs"
+  # Unset for automated testing
+  # association_resource_arns = var.association_resource_arns
+  default_action = "allow"
+  description    = "This is a generic WebACL for ${var.environment}-${var.stage} ALBs"
 
   /* Logging Defintions */
   log_destination_configs = [module.cloudwatch_logs.log_group_arn]
@@ -845,7 +846,7 @@ module "waf" {
 
       rule_label = ["iv:method:read"]
     },
-    
+
     { # TICKET-ID: Label traffic as sensitive based on previous rule evaluations, especially IP reputation
       # TICKET-ID: Include JA4 fingerprints missing as classifier for traffic to handle with higher sensitivity
       name     = "Custom-RateBasedLabelSensitivityHigh"
